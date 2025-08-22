@@ -2070,233 +2070,723 @@
       margin-bottom: 3px;
     }
 
-/* Стили для страницы товаров */
-.products-page {
+/* ===== СТИЛИ СТРАНИЦЫ ТОВАРОВ (НОВЫЕ) ===== */
+#products-page {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   background: #0a0a0a;
   z-index: 1001;
-  overflow-y: auto;
-  padding-bottom: 90px;
   display: none;
-  opacity: 0;
-  transform: translateY(100%);
-  transition: transform 0.4s cubic-bezier(0.28, 0.11, 0.32, 1), opacity 0.3s;
 }
 
-.products-page.swipe-active::before {
-  content: "";
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 5px;
-  background: rgba(255,255,255,0.3);
-  border-radius: 3px;
-  opacity: 1;
-  transition: opacity 0.3s;
+#products-page * { 
+  margin:0; 
+  padding:0; 
+  box-sizing:border-box; 
+  -webkit-tap-highlight-color:transparent; 
 }
 
-.products-page::before {
-  content: "";
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 5px;
-  background: rgba(255,255,255,0.3);
-  border-radius: 3px;
-  opacity: 0;
-  transition: opacity 0.3s;
+#products-page .top-bar { 
+  position:fixed; 
+  top:0; 
+  left:0; 
+  right:0; 
+  height:44px; 
+  background:#000; 
+  display:flex; 
+  justify-content:space-between; 
+  align-items:center; 
+  padding:0 16px; 
+  z-index:1000; 
+  border-bottom:0.5px solid #333;
 }
 
-.products-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 44px;
-  background: #000;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 16px;
-  z-index: 1000;
-  border-bottom: 0.5px solid #333;
+#products-page .logo { 
+  color:#fff; 
+  font-weight:600; 
 }
 
-.back-button {
-  background: none;
-  border: none;
-  color: #007AFF;
-  font-size: 17px;
-  cursor: pointer;
+#products-page .header-container { 
+  position:fixed; 
+  top:44px; 
+  left:0; 
+  right:0; 
+  background:#000; 
+  z-index:999; 
+  padding:12px 16px 10px; 
+  border-bottom:0.5px solid #333; 
+  transition:transform .3s; 
 }
 
-.products-title {
-  color: #fff;
-  font-weight: 600;
+#products-page .segmented { 
+  display:flex; 
+  background:#1c1c1e; 
+  border-radius:10px; 
+  padding:4px; 
+  gap:4px; 
 }
 
-/* Стили для контента товаров */
-.products-content {
-  margin-top: 44px;
-  padding: 16px;
+#products-page .segment-btn{ 
+  flex:1; 
+  border:none; 
+  background:transparent; 
+  color:#aaa; 
+  padding:8px 10px; 
+  border-radius:8px; 
+  font-size:14px; 
+  cursor:pointer; 
+  transition:background .2s,color .2s; 
 }
 
-.segmented {
-  display: flex;
-  background: #1c1c1e;
-  border-radius: 10px;
-  padding: 4px;
-  gap: 4px;
-  margin-bottom: 10px;
+#products-page .segment-btn.active{ 
+  background:#2c2c2e; 
+  color:#fff; 
 }
 
-.segment-btn {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: #aaa;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background .2s,color .2s;
+#products-page .search-container { 
+  position:relative; 
+  margin-top:12px; 
+  margin-bottom:10px; 
 }
 
-.segment-btn.active {
-  background: #2c2c2e;
-  color: #fff;
+#products-page .search-input {
+  width:100%; 
+  padding:10px 15px 10px 40px; 
+  background:#1c1c1e; 
+  border:none; 
+  border-radius:10px; 
+  color:#fff; 
+  font-size:16px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E"); 
+  background-repeat:no-repeat; 
+  background-position:15px center; 
+  transition:box-shadow .3s;
 }
 
-.search-container {
-  position: relative;
-  margin-bottom: 10px;
+#products-page .search-input:focus { 
+  animation:shadowPulse 1.5s infinite; 
 }
 
-.search-input {
-  width: 100%;
-  padding: 10px 15px 10px 40px;
-  background: #1c1c1e;
-  border: none;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 16px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: 15px center;
+@keyframes shadowPulse { 
+  0%{box-shadow:0 0 0 0 rgba(0,122,255,.4)} 
+  70%{box-shadow:0 0 0 10px rgba(0,122,255,0)} 
+  100%{box-shadow:0 0 0 0 rgba(0,122,255,0)} 
 }
 
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
+#products-page .toolbar { 
+  display:flex; 
+  gap:8px; 
+  margin-bottom:10px; 
 }
 
-.select-ios, .categories-toggle {
-  width: 100%;
-  padding: 12px;
-  background: #1c1c1e;
-  border: none;
-  border-radius: 10px;
-  color: #999;
-  font-size: 14px;
+#products-page .select-ios, 
+#products-page .categories-toggle{ 
+  width:100%; 
+  padding:12px; 
+  background:#1c1c1e; 
+  border:none; 
+  border-radius:10px; 
+  color:#999; 
+  font-size:14px; 
 }
 
-.categories-dropdown {
-  background: #1c1c1e;
-  border-radius: 10px;
-  margin-top: 8px;
-  overflow-x: auto;
-  white-space: nowrap;
-  max-height: 0;
-  transition: max-height .4s cubic-bezier(.23,1,.32,1);
-  display: flex;
-  flex-direction: row;
-  padding: 0;
+#products-page .categories-toggle{ 
+  text-align:left; 
+  position:relative; 
+  cursor:pointer; 
 }
 
-.categories-dropdown.active {
-  max-height: 60px;
-  padding: 8px;
+#products-page .categories-toggle::after{ 
+  content:""; 
+  position:absolute; 
+  right:16px; 
+  top:50%; 
+  transform:translateY(-50%); 
+  width:16px; 
+  height:16px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); 
+  background-repeat:no-repeat; 
+  transition:transform .3s; 
 }
 
-.category-item {
-  padding: 8px 16px;
-  color: #e0e0e0;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background .2s;
-  display: inline-block;
-  border-radius: 8px;
-  margin-right: 8px;
-  background: #2c2c2e;
+#products-page .categories-toggle.active::after{ 
+  transform:translateY(-50%) rotate(180deg); 
 }
 
-.products-feed {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+#products-page .categories-dropdown { 
+  background:#1c1c1e; 
+  border-radius:10px; 
+  margin-top:8px; 
+  overflow-x:auto; 
+  white-space:nowrap; 
+  max-height:0; 
+  transition:max-height .4s cubic-bezier(.23,1,.32,1); 
+  display:flex; 
+  flex-direction:row; 
+  padding:0; 
 }
 
-.product-card {
-  background: #1c1c1e;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: transform .1s;
+#products-page .categories-dropdown.active{ 
+  max-height:60px; 
+  padding:8px; 
 }
 
-.product-image {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
+#products-page .category-item{ 
+  padding:8px 16px; 
+  color:#e0e0e0; 
+  font-size:16px; 
+  cursor:pointer; 
+  transition:background .2s; 
+  display:inline-block; 
+  border-radius:8px; 
+  margin-right:8px; 
+  background:#2c2c2e; 
 }
 
-.product-content {
-  padding: 14px;
+#products-page .category-item:last-child{ 
+  margin-right:0; 
 }
 
-.product-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: #fff;
+#products-page .category-item:active{ 
+  background:#3a3a3c; 
 }
 
-.product-price {
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
+#products-page .products-feed{ 
+  display:grid; 
+  grid-template-columns:repeat(2, 1fr); 
+  gap:16px; 
+  padding:16px; 
+  margin-top:220px; 
+  position:relative; 
+  z-index:1;
 }
 
-.loading-spinner {
-  display: none;
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007aff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 20px auto;
+#products-page .product-card{ 
+  background:#1c1c1e; 
+  border-radius:12px; 
+  overflow:hidden; 
+  transition:transform .1s, box-shadow .3s; 
+  box-shadow:0 1px 3px rgba(0,0,0,.1); 
+  position:relative; 
+  touch-action:pan-y; 
 }
 
-@keyframes spin {
-  0% { transform: rotate(0); }
-  100% { transform: rotate(360deg); }
+#products-page .product-card:active{ 
+  transform:scale(.97); 
+  box-shadow:0 4px 12px rgba(0,0,0,.2); 
 }
 
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  color: #999;
-  display: none;
-  grid-column: 1 / -1;
+#products-page .product-image{ 
+  width:100%; 
+  height:180px; 
+  object-fit:cover; 
+  opacity:0; 
+  transition:opacity .3s; 
+}
+
+#products-page .product-image.loaded{ 
+  opacity:1; 
+}
+
+#products-page .product-content{ 
+  padding:14px; 
+}
+
+#products-page .product-title{ 
+  font-size:16px; 
+  font-weight:500; 
+  margin-bottom:6px; 
+  color:#fff; 
+}
+
+#products-page .product-price{ 
+  font-size:18px; 
+  font-weight:600; 
+  color:#fff; 
+}
+
+#products-page .swipe-bg{ 
+  position:absolute; 
+  inset:0; 
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  padding:0 12px; 
+  pointer-events:none; 
+  z-index:0; 
+}
+
+#products-page .swipe-left, 
+#products-page .swipe-right{ 
+  font-size:12px; 
+  padding:6px 10px; 
+  border-radius:14px; 
+  opacity:.0; 
+  transition:opacity .2s, transform .2s; 
+}
+
+#products-page .swipe-left{ 
+  background:#007aff; 
+  color:#fff; 
+}
+
+#products-page .swipe-right{ 
+  background:#ff2d55; 
+  color:#fff; 
+}
+
+#products-page .product-card.swiping .swipe-left, 
+#products-page .product-card.swiping .swipe-right{ 
+  opacity:.8; 
+}
+
+#products-page .quick-view-btn{ 
+  position:absolute; 
+  bottom:10px; 
+  left:50%; 
+  transform:translateX(-50%); 
+  background:rgba(0,122,255,.9); 
+  color:#fff; 
+  border:none; 
+  padding:8px 16px; 
+  border-radius:20px; 
+  font-size:14px; 
+  opacity:0; 
+  transition:opacity .3s; 
+  z-index:2; 
+}
+
+#products-page .product-card:hover .quick-view-btn{ 
+  opacity:1; 
+}
+
+#products-page .product-brand{ 
+  position:absolute; 
+  top:10px; 
+  right:10px; 
+  background:rgba(0,0,0,.5); 
+  color:#fff; 
+  padding:4px 8px; 
+  border-radius:4px; 
+  font-size:10px; 
+  font-weight:500; 
+  text-transform:uppercase; 
+  letter-spacing:1px; 
+  z-index:2;
+}
+
+#products-page .product-page{ 
+  position:fixed; 
+  top:0; 
+  left:0; 
+  right:0; 
+  bottom:0; 
+  background:#0a0a0a; 
+  z-index:2000; 
+  transform:translateY(100%); 
+  transition:transform .5s cubic-bezier(.23,1,.32,1); 
+  overflow-y:auto; 
+  will-change:transform; 
+}
+
+#products-page .product-page.active{ 
+  transform:translateY(0); 
+}
+
+#products-page .product-header{ 
+  position:sticky; 
+  top:0; 
+  background:rgba(0,0,0,.8); 
+  backdrop-filter:blur(20px); 
+  padding:12px 16px; 
+  display:flex; 
+  justify-content:flex-end; 
+  z-index:2;
+}
+
+#products-page .close-btn{ 
+  color:#007aff; 
+  font-size:17px; 
+  font-weight:500; 
+  cursor:pointer; 
+}
+
+#products-page .product-carousel{ 
+  width:100%; 
+  overflow:hidden; 
+  position:relative; 
+  height:300px; 
+}
+
+#products-page .carousel-inner{ 
+  display:flex; 
+  transition:transform .3s cubic-bezier(.23,1,.32,1); 
+  height:100%; 
+  will-change:transform; 
+}
+
+#products-page .carousel-item{ 
+  min-width:100%; 
+  height:100%; 
+  position:relative; 
+}
+
+#products-page .carousel-item img{ 
+  width:100%; 
+  height:100%; 
+  object-fit:cover; 
+}
+
+#products-page .carousel-indicators{ 
+  display:flex; 
+  justify-content:center; 
+  position:absolute; 
+  bottom:15px; 
+  left:0; 
+  right:0; 
+  z-index:1; 
+}
+
+#products-page .carousel-indicator{ 
+  width:8px; 
+  height:8px; 
+  border-radius:50%; 
+  background:rgba(255,255,255,.5); 
+  margin:0 4px; 
+  transition:transform .3s, background .3s; 
+}
+
+#products-page .carousel-indicator.active{ 
+  background:#fff; 
+  transform:scale(1.2); 
+}
+
+#products-page .product-details{ 
+  padding:20px; 
+  background:#1c1c1e; 
+  margin:16px; 
+  border-radius:12px; 
+}
+
+#products-page .product-page-title{ 
+  font-size:22px; 
+  font-weight:600; 
+  margin-bottom:8px; 
+  color:#fff; 
+}
+
+#products-page .product-page-price{ 
+  font-size:24px; 
+  font-weight:700; 
+  margin-bottom:16px; 
+  color:#fff; 
+}
+
+#products-page .product-rating{ 
+  display:flex; 
+  align-items:center; 
+  margin-bottom:16px; 
+}
+
+#products-page .rating-stars{ 
+  color:#ffcc00; 
+  font-size:14px; 
+  margin-right:6px; 
+}
+
+#products-page .rating-count{ 
+  color:#999; 
+  font-size:12px; 
+}
+
+#products-page .recommendations-section{ 
+  margin-top:24px; 
+  border-top:.5px solid #333; 
+  padding-top:16px; 
+}
+
+#products-page .recommendations-section h3{ 
+  font-size:18px; 
+  margin-bottom:12px; 
+  color:#fff; 
+}
+
+#products-page .recommendations-grid{ 
+  display:grid; 
+  grid-template-columns:repeat(2,1fr); 
+  gap:12px; 
+}
+
+#products-page .add-to-cart-btn{ 
+  width:100%; 
+  padding:16px; 
+  background:#007aff; 
+  border:none; 
+  border-radius:10px; 
+  color:#fff; 
+  font-size:17px; 
+  font-weight:500; 
+  margin-top:20px; 
+  transition:opacity .2s; 
+}
+
+#products-page .add-to-cart-btn:active{ 
+  opacity:.7; 
+}
+
+#products-page .edge-hint{
+  position:fixed; 
+  top:0; 
+  left:0; 
+  width:24px; 
+  height:100%; 
+  z-index:2001;
+  background:linear-gradient(90deg, rgba(255,255,255,.06), transparent);
+  opacity:.0; 
+  pointer-events:none; 
+  transition:opacity .2s;
+}
+
+#products-page .product-page.active.back-dragging .edge-hint{ 
+  opacity:.6; 
+}
+
+#products-page .skeleton-card{ 
+  background:#1c1c1e; 
+  border-radius:12px; 
+  overflow:hidden; 
+}
+
+#products-page .sk-image, 
+#products-page .sk-line{ 
+  background:linear-gradient(90deg, #2a2a2c 25%, #3a3a3c 37%, #2a2a2c 63%); 
+  background-size:400% 100%; 
+  animation:sk 1.4s ease infinite; 
+}
+
+#products-page .sk-image{ 
+  height:180px; 
+}
+
+#products-page .sk-content{ 
+  padding:14px; 
+}
+
+#products-page .sk-line{ 
+  height:14px; 
+  border-radius:8px; 
+  margin-bottom:8px; 
+}
+
+@keyframes sk { 
+  0%{background-position:100% 0} 
+  100%{background-position:0 0} 
+}
+
+#products-page .loading-spinner{ 
+  display:none; 
+  width:40px; 
+  height:40px; 
+  border:4px solid #f3f3f3; 
+  border-top:4px solid #007aff; 
+  border-radius:50%; 
+  animation:spin 1s linear infinite; 
+  margin:20px auto; 
+}
+
+@keyframes spin{
+  0%{transform:rotate(0)}
+  100%{transform:rotate(360deg)}
+}
+
+#products-page .empty-state{ 
+  text-align:center; 
+  padding:40px 20px; 
+  color:#999; 
+  display:none; 
+  grid-column:1 / -1; 
+}
+
+#products-page .cart-button{ 
+  position:fixed; 
+  bottom:20px; 
+  right:20px; 
+  width:50px; 
+  height:50px; 
+  background:#000; 
+  border-radius:50%; 
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  font-size:24px; 
+  box-shadow:0 4px 12px rgba(0,0,0,.2); 
+  cursor:pointer; 
+  z-index:1100; 
+  transition:transform .3s; 
+  color:#fff; 
+}
+
+#products-page .cart-button:hover{ 
+  animation:pulse 1s infinite; 
+}
+
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.1)}
+  100%{transform:scale(1)}
+}
+
+#products-page .cart-counter{ 
+  position:absolute; 
+  top:-5px; 
+  right:-5px; 
+  background:#007aff; 
+  color:#fff; 
+  border-radius:50%; 
+  width:20px; 
+  height:20px; 
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  font-size:12px; 
+  font-weight:bold; 
+}
+
+#products-page .sheet-backdrop{ 
+  position:fixed; 
+  inset:0; 
+  background:rgba(0,0,0,.4); 
+  backdrop-filter:blur(2px); 
+  z-index:2100; 
+  opacity:0; 
+  pointer-events:none; 
+  transition:opacity .25s; 
+}
+
+#products-page .sheet{ 
+  position:fixed; 
+  left:0; 
+  right:0; 
+  bottom:-70vh; 
+  height:70vh; 
+  background:#111; 
+  border-top-left-radius:16px; 
+  border-top-right-radius:16px; 
+  z-index:2200; 
+  box-shadow:0 -10px 30px rgba(0,0,0,.4); 
+  transition:transform .35s; 
+  transform:translateY(100%); 
+  display:flex; 
+  flex-direction:column; 
+}
+
+#products-page .sheet.open{ 
+  transform:translateY(0); 
+}
+
+#products-page .sheet-backdrop.open{ 
+  opacity:1; 
+  pointer-events:auto; 
+}
+
+#products-page .sheet-header{ 
+  padding:12px 16px; 
+  border-bottom:.5px solid #333; 
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+}
+
+#products-page .sheet-drag{ 
+  width:36px; 
+  height:4px; 
+  background:#333; 
+  border-radius:999px; 
+  margin:6px auto 10px; 
+}
+
+#products-page .sheet-title{ 
+  font-weight:600; 
+}
+
+#products-page .sheet-content{ 
+  flex:1; 
+  overflow:auto; 
+  padding:8px 16px 16px; 
+}
+
+#products-page .cart-item{ 
+  display:flex; 
+  gap:10px; 
+  padding:10px 0; 
+  border-bottom:.5px solid #222; 
+  align-items:center; 
+}
+
+#products-page .cart-item img{ 
+  width:56px; 
+  height:56px; 
+  object-fit:cover; 
+  border-radius:10px; 
+}
+
+#products-page .cart-item h4{ 
+  font-size:14px; 
+  margin-bottom:4px; 
+}
+
+#products-page .cart-item .price{ 
+  font-weight:600; 
+}
+
+#products-page .sheet-footer{ 
+  padding:12px 16px 16px; 
+  border-top:.5px solid #333; 
+}
+
+#products-page .checkout-btn{ 
+  width:100%; 
+  padding:14px; 
+  border:none; 
+  border-radius:12px; 
+  background:#0a84ff; 
+  color:#fff; 
+  font-weight:600; 
+  font-size:16px; 
+}
+
+#products-page .ptr{ 
+  position:fixed; 
+  top:44px; 
+  left:0; 
+  right:0; 
+  height:0; 
+  overflow:hidden; 
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  color:#9aa; 
+  z-index:1200; 
+  transition:height .2s; 
+}
+
+#products-page .ptr-inner{ 
+  background:#1c1c1e; 
+  border-radius:10px; 
+  padding:6px 10px; 
+  font-size:12px; 
+}
+
+@media (max-width:600px){ 
+  #products-page .products-feed{ 
+    grid-template-columns:1fr; 
+  } 
+  #products-page .product-carousel{ 
+    height:250px; 
+  } 
 }
 
  /* Добавляем стили из страницы пополнения */
@@ -3756,15 +4246,16 @@
     </div>
   </div>
 
-<!-- Страница товаров -->
-<div id="products-page" class="products-page">
-  <div class="products-header">
-    <button class="back-button" onclick="hideProductsPage()">Назад</button>
-    <div class="products-title">Каталог</div>
-    <div style="width: 60px;"></div> <!-- Для выравнивания -->
+<!-- СТРАНИЦА ТОВАРОВ (НОВАЯ ВЕРСИЯ) -->
+<div id="products-page">
+  <!-- Шапка iOS -->
+  <div class="top-bar">
+    <div class="logo">Каталог</div>
   </div>
-  
-  <div class="products-content">
+
+  <!-- Объединенный верхний блок iOS -->
+  <div class="header-container">
+    <!-- сегмент-контрол -->
     <div class="segmented" style="margin-bottom:10px;">
       <button class="segment-btn active" id="tabProducts">Товары</button>
       <button class="segment-btn" id="tabWishlist">Избранное</button>
@@ -3798,17 +4289,69 @@
       <div class="category-item" onclick="filterProducts('shoes')">Обувь</div>
       <div class="category-item" onclick="filterProducts('pants')">Брюки</div>
     </div>
+  </div>
 
-    <!-- Лента товаров -->
-    <div class="products-feed" id="productsFeed"></div>
+  <!-- Pull to refresh -->
+  <div class="ptr" id="ptr"><div class="ptr-inner" id="ptrText">Потяните, чтобы обновить</div></div>
 
-    <!-- Индикатор загрузки -->
-    <div class="loading-spinner" id="loadingSpinner"></div>
-    
-    <!-- Пусто -->
-    <div class="empty-state" id="emptyState">
-      <h3>Товары не найдены</h3>
-      <p>Попробуйте изменить параметры поиска</p>
+  <!-- Лента товаров -->
+  <div class="products-feed" id="productsFeed"></div>
+
+  <!-- Индикатор загрузки -->
+  <div class="loading-spinner" id="loadingSpinner"></div>
+  
+  <!-- Пусто -->
+  <div class="empty-state" id="emptyState">
+    <h3>Товары не найдены</h3>
+    <p>Попробуйте изменить параметры поиска</p>
+  </div>
+
+  <!-- Страница товара -->
+  <div class="product-page" id="productPage">
+    <!-- edge hint для визуала свайпа назад -->
+    <div class="edge-hint" id="edgeHint" aria-hidden="true"></div>
+
+    <div class="product-header">
+      <div class="close-btn" onclick="closeProductPage()">Готово</div>
+    </div>
+    <div class="product-carousel">
+      <div class="carousel-inner" id="carouselInner"></div>
+      <div class="carousel-indicators" id="carouselIndicators"></div>
+    </div>
+    <div class="product-details">
+      <h1 class="product-page-title" id="productPageTitle"></h1>
+      <div class="product-page-price" id="productPagePrice"></div>
+      <div class="product-rating">
+        <div class="rating-stars" id="productRatingStars"></div>
+        <div class="rating-count" id="productRatingCount"></div>
+      </div>
+      <p class="product-page-description" id="productPageDescription"></p>
+      <button class="add-to-cart-btn" id="addToCartBtn">Добавить в корзину</button>
+      <!-- Рекомендации динамически -->
+    </div>
+  </div>
+
+  <!-- Кнопка корзины -->
+  <div class="cart-button" id="bottomCartButton">
+    🛒
+    <div class="cart-counter" id="cartCounter">0</div>
+  </div>
+
+  <!-- Bottom Sheet корзины -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="cartSheet">
+    <div class="sheet-drag"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">Корзина</div>
+      <button id="clearCart" class="segment-btn" style="flex:0; padding:6px 10px;">Очистить</button>
+    </div>
+    <div class="sheet-content" id="cartList"></div>
+    <div class="sheet-footer">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div>Итого:</div>
+        <div id="cartTotal" style="font-weight:700; font-size:18px;"></div>
+      </div>
+      <button class="checkout-btn" id="checkoutBtn">Оформить заказ</button>
     </div>
   </div>
 </div>
@@ -5104,197 +5647,125 @@ function hidePaymentModal() {
   document.getElementById('payment-modal').classList.remove('show');
 }
 
-// ===== ФУНКЦИИ ДЛЯ СТРАНИЦЫ ТОВАРОВ =====
-const productsData = [
-  { id:1, title:"Часы Premium Black", images:[
-    "https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-  ], description:"Роскошные черные часы с автоматическим механизмом.", price:24990, category:"watches", rating:4.8, reviews:24 },
-  { id:2, title:"Наушники Pro Sound", images:[
-    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-  ], description:"Беспроводные наушники с активным шумоподавлением.", price:18990, category:"headphones", rating:4.5, reviews:18 },
-  { id:3, title:"Кольцо Diamond", images:[
-    "https://images.unsplash.com/photo-1605100804763-247f67b3557e?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-  ], description:"Элегантное серебряное кольцо с бриллиантом.", price:42500, category:"jewelry", rating:4.9, reviews:32 },
-  { id:4, title:"Умные часы Pro", images:[
-    "https://images.unsplash.com/photo-1558379850-823f103f866a?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-  ], description:"Умные часы с функцией мониторинга здоровья.", price:32990, category:"watches", rating:4.7, reviews:15 },
-  { id:5, title:"Беспроводные наушники Air", images:[
-    "https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1578319439584-104c94d37305?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-  ], description:"Компактные беспроводные наушники.", price:15990, category:"headphones", rating:4.3, reviews:22 },
-  { id:6, title:"Футболка Classic Black", images:[
-    "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1527719327859-c6ce80353573?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-  ], description:"Классическая черная футболка из 100% хлопка.", price:2990, category:"tshirts", rating:4.2, reviews:45 }
-];
-
+// ===== ПЕРЕМЕННЫЕ СТРАНИЦЫ ТОВАРОВ =====
+let productsPageInitialized = false;
+let cartItems = [];
+let favorites = [];
+let currentProduct = null;
+let currentImageIndex = 0;
 let activeCategory = 'all';
+let activeTab = 'products';
 
-function loadProductsData(category = activeCategory, searchQuery = '') {
+// ===== ФУНКЦИИ УПРАВЛЕНИЯ СТРАНИЦЕЙ =====
+function showProductsPage() {
+  const allPages = [
+    document.getElementById('main-page'),
+    document.getElementById('cabinet-page'),
+    document.getElementById('treasure-page'),
+    document.getElementById('storage-page'),
+    document.getElementById('payment-page'),
+    document.getElementById('expenses-page'),
+    document.getElementById('profile-page'),
+    document.getElementById('reviews-page')
+  ];
+  
+  allPages.forEach(page => {
+    if (page) page.style.display = 'none';
+  });
+  
+  const productsPage = document.getElementById('products-page');
+  productsPage.style.display = 'block';
+  
+  if (!productsPageInitialized) {
+    initProductsPage();
+    productsPageInitialized = true;
+  } else if (window.loadProducts) {
+    window.loadProducts();
+  }
+  
+  updateActiveNav(null);
+  triggerVibration();
+}
+
+function hideProductsPage() {
+  const productsPage = document.getElementById('products-page');
+  productsPage.style.display = 'none';
+  showPage(document.getElementById('main-page'));
+  triggerVibration();
+}
+
+// ===== ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ =====
+function initProductsPage() {
+  // Данные товаров
+  const products = [
+    { 
+      id:1, 
+      title:"Часы Premium Black", 
+      images:[
+        "https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
+        "https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
+      ], 
+      description:"Роскошные черные часы с автоматическим механизмом. Сапфировое стекло, водонепроницаемость 50м, кожаный ремешок.", 
+      price:24990, 
+      category:"watches", 
+      rating:4.8, 
+      reviews:24, 
+      keywords: ["часы", "премиум", "черные", "кожаный ремешок"] 
+    },
+    // ... (остальные товары из твоего кода)
+  ];
+
+  // DOM элементы
+  const productsFeed = document.getElementById('productsFeed');
+  const productPage = document.getElementById('productPage');
+  const searchInput = document.getElementById('searchInputProducts');
+  const categoriesToggle = document.getElementById('categoriesToggle');
+  const categoriesDropdown = document.getElementById('categoriesDropdown');
+  const addToCartBtn = document.getElementById('addToCartBtn');
   const loadingSpinner = document.getElementById('loadingSpinner');
-  const productsFeed = document.getElementById('productsFeed');
-  
-  loadingSpinner.style.display = 'block';
-  productsFeed.innerHTML = '';
-  
-  // Имитация загрузки
-  setTimeout(() => {
-    loadingSpinner.style.display = 'none';
-    
-    let filtered = productsData.filter(p => {
-      const matchesCategory = category === 'all' || p.category === category;
-      if (searchQuery.trim() === '') return matchesCategory;
-      
-      const q = searchQuery.toLowerCase();
-      return p.title.toLowerCase().includes(q) || 
-             p.description.toLowerCase().includes(q);
-    });
-    
-    renderProducts(filtered);
-  }, 800);
-}
+  const emptyState = document.getElementById('emptyState');
+  const bottomCartButton = document.getElementById('bottomCartButton');
+  const cartCounter = document.getElementById('cartCounter');
+  const sortSelect = document.getElementById('sortSelect');
+  const tabProducts = document.getElementById('tabProducts');
+  const tabWishlist = document.getElementById('tabWishlist');
 
-function renderProducts(productsList) {
-  const productsFeed = document.getElementById('productsFeed');
-  productsFeed.innerHTML = '';
-  
-  if (productsList.length === 0) {
-    document.getElementById('emptyState').style.display = 'block';
-    return;
+  // Функции (добавь сюда все функции из твоего скрипта)
+  function loadProducts(category = activeCategory, searchQuery = '') {
+    // ... код из твоего файла
   }
-  
-  document.getElementById('emptyState').style.display = 'none';
-  
-  productsList.forEach(product => {
-    const productCard = document.createElement('div');
-    productCard.className = 'product-card';
-    productCard.innerHTML = `
-      <img src="${product.images[0]}" class="product-image" alt="${product.title}">
-      <div class="product-content">
-        <h3 class="product-title">${product.title}</h3>
-        <div class="product-price">${product.price.toLocaleString()} ₽</div>
-      </div>
-    `;
-    productCard.addEventListener('click', () => {
-      // Здесь можно открыть детальную страницу товара
-      alert(`Открываем ${product.title}`);
-    });
-    productsFeed.appendChild(productCard);
-  });
+
+  function renderCards(list) {
+    // ... код из твоего файла
+  }
+
+  // ... все остальные функции
+
+  // Инициализация
+  loadFromStorage();
+  window.loadProducts = loadProducts;
+  window.filterProducts = filterProducts;
+  window.openProductPage = openProductPage;
+  window.closeProductPage = closeProductPage;
+  loadProducts();
 }
 
-// Инициализация страницы товаров
-document.getElementById('searchInputProducts').addEventListener('input', (e) => {
-  loadProductsData(activeCategory, e.target.value);
-});
-
-document.getElementById('categoriesToggle').addEventListener('click', () => {
-  document.getElementById('categoriesDropdown').classList.toggle('active');
-});
-
-document.getElementById('sortSelect').addEventListener('change', () => {
-  loadProductsData(activeCategory, document.getElementById('searchInputProducts').value);
-});
-
-window.filterProducts = function(category) {
-  activeCategory = category;
-  loadProductsData(category, document.getElementById('searchInputProducts').value);
-  document.getElementById('categoriesDropdown').classList.remove('active');
-};
-
-window.hideProductsPage = hideProductsPage;
-
-// Вспомогательные функции
-function triggerVibration() {
-  if (navigator.vibrate) {
-    navigator.vibrate(50);
+// ===== ОБРАБОТЧИК СВАЙПА ВВЕРХ =====
+function handleSwipeUp() {
+  if (currentPage === 'main-page' && window.scrollY <= 0) {
+    showProductsPage();
   }
 }
 
-function handleBackButton() {
-  // Логика кнопки "Назад" в Telegram WebApp
-  if (productsPageVisible) {
-    hideProductsPage();
-  } else if (document.getElementById('expenses-page').style.display === 'block') {
-    goBackToCabinet();
-  } else if (document.getElementById('profile-page').style.display === 'block') {
-    hideProfilePage();
-  } else {
-    Telegram.WebApp.close();
-  }
-}
-
-// Переопределяем обработчики для страницы товаров
-function initSwipeHandlers() {
-  // Обработчик свайпа вверх на главной странице (оставляем без изменений)
-  mainPage.addEventListener('touchstart', handleTouchStart, { passive: true });
-  mainPage.addEventListener('touchmove', handleTouchMove, { passive: false });
-  mainPage.addEventListener('touchend', handleTouchEnd);
+// Добавь вызов в обработчик свайпов
+function handleTouchEnd(e) {
+  // ... существующий код ...
   
-  // Новые обработчики для страницы товаров
-  productsPage.addEventListener('touchstart', function(e) {
-    // Разрешаем свайп только если начали с пустой области или товаров
-    const isSwipeArea = !e.target.closest('.products-header') && 
-                       !e.target.closest('.search-container') &&
-                       !e.target.closest('.toolbar') &&
-                       !e.target.closest('.categories-dropdown') &&
-                       !e.target.closest('.segmented') &&
-                       window.scrollY <= 0;
-    
-    if (productsPageVisible && isSwipeArea) {
-      startY = e.touches[0].clientY;
-      productsPage.classList.add('swipe-active');
-    }
-  }, { passive: true });
-
-  productsPage.addEventListener('touchmove', function(e) {
-    if (!productsPageVisible) return;
-    
-    const isSwipeArea = !e.target.closest('.products-header') && 
-                       !e.target.closest('.search-container') &&
-                       !e.target.closest('.toolbar') &&
-                       !e.target.closest('.categories-dropdown') &&
-                       !e.target.closest('.segmented');
-    
-    if (!isSwipeArea) return;
-    
-    currentY = e.touches[0].clientY;
-    const deltaY = currentY - startY;
-    
-    if (window.scrollY <= 0 && deltaY > 0) {
-      e.preventDefault();
-      productsPage.style.opacity = `${1 - deltaY / 300}`;
-    }
-  }, { passive: false });
-
-  productsPage.addEventListener('touchend', function(e) {
-    if (!productsPageVisible) return;
-    
-    const isSwipeArea = !e.target.closest('.products-header') && 
-                       !e.target.closest('.search-container') &&
-                       !e.target.closest('.toolbar') &&
-                       !e.target.closest('.categories-dropdown') &&
-                       !e.target.closest('.segmented');
-    
-    if (!isSwipeArea) {
-      productsPage.classList.remove('swipe-active');
-      productsPage.style.opacity = '1';
-      return;
-    }
-    
-    const deltaY = currentY - startY;
-    productsPage.classList.remove('swipe-active');
-    
-    if (deltaY > 100 && window.scrollY <= 0) {
-      hideProductsPage();
-    } else {
-      productsPage.style.opacity = '1';
-    }
-  });
+  // Добавь проверку на свайп вверх
+  const diffY = touchEndY - touchStartY;
+  if (currentPage === 'main-page' && isVerticalSwipe && diffY < -50) {
+    showProductsPage();
+  }
 }
 
 // Блокировка масштабирования только при мультитаче
@@ -5385,7 +5856,6 @@ function handleSwipeGesture(currentPage, touchEndX, touchEndY) {
     }
   }
 }
-
 // Простая функция показа страницы с fade-эффектом
 function showPage(pageToShow) {
   // Сначала скрываем все страницы
@@ -5415,8 +5885,8 @@ function showPage(pageToShow) {
   }
 }
 
-// Функция для показа страницы товаров
-function showProductsPage() {
+// Добавь вызов в обработчик свайпов
+function handleTouchEnd(e) {
   productsPageVisible = true;
   bottomNav.style.transition = 'transform 0.3s ease';
   bottomNav.style.transform = 'translateY(100%)';
