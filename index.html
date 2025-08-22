@@ -4594,6 +4594,9 @@ function initUserData() {
     localStorage.setItem('userBalance', '0');
     document.getElementById('balance').textContent = '0';
   }
+  
+  // Обновляем счетчик корзины при загрузке
+  updateCartCounter();
 }
 
 function setupDemoData() {
@@ -4617,6 +4620,77 @@ function setupDemoData() {
     </svg>`;
 }
 
+// ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ КОРЗИНЫ =====
+let cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
+// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С КОРЗИНОЙ =====
+function addToCart(product) {
+  // Проверяем, есть ли уже товар в корзине
+  const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
+  
+  if (existingItemIndex !== -1) {
+    // Увеличиваем количество, если товар уже в корзине
+    cartItems[existingItemIndex].quantity += 1;
+    showToast(`Количество "${product.title}" увеличено`);
+  } else {
+    // Добавляем новый товар в корзину
+    const cartProduct = {
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: getProductIcon(product.category),
+      quantity: 1,
+      category: getProductCategory(product.category),
+      inStock: Math.floor(Math.random() * 10) + 1, // Случайное количество на складе
+      isNew: true
+    };
+    
+    cartItems.push(cartProduct);
+    showToast(`"${product.title}" добавлен в корзину`);
+  }
+  
+  // Сохраняем в localStorage
+  localStorage.setItem('cartItems', JSON.stringify(cartItems));
+  triggerVibration();
+  
+  // Обновляем счетчик корзины
+  updateCartCounter();
+}
+
+function getProductIcon(category) {
+  const iconMap = {
+    'watches': 'clock',
+    'headphones': 'headphones',
+    'jewelry': 'gem',
+    'electronics': 'mobile-alt',
+    'default': 'shopping-bag'
+  };
+  
+  return iconMap[category] || iconMap.default;
+}
+
+function getProductCategory(category) {
+  const categoryMap = {
+    'watches': 'Часы',
+    'headphones': 'Наушники',
+    'jewelry': 'Украшения',
+    'electronics': 'Электроника',
+    'default': 'Разное'
+  };
+  
+  return categoryMap[category] || categoryMap.default;
+}
+
+function updateCartCounter() {
+  const cartCounter = document.querySelector('.cart-counter');
+  if (cartCounter) {
+    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    cartCounter.textContent = totalItems;
+    cartCounter.style.display = totalItems > 0 ? 'flex' : 'none';
+  }
+}
+
 // Вызываем инициализацию при загрузке
 document.addEventListener('DOMContentLoaded', function() {
   initUserData();
@@ -4630,6 +4704,29 @@ document.addEventListener('DOMContentLoaded', function() {
   // Инициализация склада при загрузке, если он видим
   if (document.getElementById('storage-page').style.display !== 'none') {
     initStoragePage();
+  }
+  
+  // Обработчик для кнопки "Добавить в корзину"
+  const addToCartBtn = document.getElementById('addToCartBtn');
+  if (addToCartBtn) {
+    addToCartBtn.addEventListener('click', function() {
+      // Получаем текущий товар (будет установлен в openProductPage)
+      const productTitle = document.getElementById('productPageTitle')?.textContent;
+      const productPriceText = document.getElementById('productPagePrice')?.textContent;
+      
+      if (productTitle && productPriceText) {
+        const productPrice = parseInt(productPriceText.replace(/\D/g, ''));
+        
+        // Находим товар в массиве products
+        const product = products.find(p => p.title === productTitle && p.price === productPrice);
+        
+        if (product) {
+          addToCart(product);
+        } else {
+          console.error('Товар не найден');
+        }
+      }
+    });
   }
 });
 
@@ -5282,18 +5379,6 @@ if (window.Telegram?.WebApp?.BackButton) {
   Telegram.WebApp.BackButton.onClick(handleBackButton);
 }
 
-// Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', function() {
-  initUserData();
-  initSwipeHandlers();
-  initPaymentPage();
-  
-  // Инициализация склада при загрузке, если он видим
-  if (document.getElementById('storage-page').style.display !== 'none') {
-    initStoragePage();
-  }
-});
-
 // ===== КОД СТРАНИЦЫ ПОПОЛНЕНИЯ =====
 let paymentCards = [];
 let selectedCardIndex = 0;
@@ -5476,1801 +5561,690 @@ function saveCard() {
     expiry: expiry,
     brand: brand,
     cvc: cvc,
-    fullNumber: number.replace(/\D/g, '')
+        fullNumber: number.replace(/\D/g, '')
   };
-  
-  // Добавляем карту
-  paymentCards.push(newCard);
+
+  // Добавляем или обновляем карту
+  const existingIndex = paymentCards.findIndex(card => card.id === newCard.id);
+  if (existingIndex !== -1) {
+    paymentCards[existingIndex] = newCard;
+  } else {
+    paymentCards.push(newCard);
+  }
+
+  // Сохраняем в localStorage
   localStorage.setItem('paymentCards', JSON.stringify(paymentCards));
   
-  // Обновляем интерфейс
+  // Обновляем отображение
   initPaymentCarousel();
-  hideAddCardModal();
-  triggerVibration();
   
-  alert('Карта успешно добавлена!');
+  // Закрываем модальное окно
+  hideAddCardModal();
+  
+  showToast('Карта успешно сохранена');
 }
 
 // Удаление карты
 function deleteCard() {
-  const number = document.getElementById('cardNumberInput').value.replace(/\D/g, '');
-  const cardIndex = paymentCards.findIndex(card => card.fullNumber === number);
+  if (paymentCards.length === 0) return;
   
-  if (cardIndex >= 0) {
-    paymentCards.splice(cardIndex, 1);
-    localStorage.setItem('paymentCards', JSON.stringify(paymentCards));
-    initPaymentCarousel();
-    hideAddCardModal();
-    triggerVibration();
-    alert('Карта удалена');
-  } else {
-    alert('Карта не найдена');
-  }
+  paymentCards.splice(selectedCardIndex, 1);
+  localStorage.setItem('paymentCards', JSON.stringify(paymentCards));
+  
+  // Обновляем отображение
+  initPaymentCarousel();
+  
+  showToast('Карта удалена');
 }
 
-// Установка суммы пополнения
+// Установка суммы платежа
 function setAmount(amount) {
   document.getElementById('amount-input').value = amount;
   updatePaymentAmounts();
-  triggerVibration();
 }
 
-// Обновление сумм при изменении ввода
+// Обновление сумм платежа
 function updatePaymentAmounts() {
-  const amount = parseFloat(document.getElementById('amount-input').value) || 0;
-  const commissionRate = calculateCommission(amount);
-  const commission = amount * commissionRate;
-  const netAmount = amount - commission;
+  const amountInput = document.getElementById('amount-input');
+  const amount = parseInt(amountInput.value) || 0;
+  const rubAmount = document.getElementById('rub-amount');
+  const usdAmount = document.getElementById('usd-amount');
   
-  document.getElementById('payment-amount').textContent = `${amount} P`;
-  document.getElementById('commission').textContent = `${(commissionRate * 100).toFixed(1)}%`;
-  document.getElementById('net-amount').textContent = `${netAmount.toFixed(2)} P`;
-}
-
-// Расчет комиссии
-function calculateCommission(amount) {
-  if (amount <= 1000) return 0.03;
-  if (amount <= 5000) return 0.025;
-  return 0.02;
-}
-
-// Голосовой ввод
-function startVoiceInput() {
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'ru-RU';
-    recognition.onresult = function(event) {
-      const transcript = event.results[0][0].transcript;
-      const amount = parseFloat(transcript.replace(',', '.').replace(/[^\d.]/g, ''));
-      if (!isNaN(amount)) {
-        setAmount(amount);
-      }
-    };
-    recognition.start();
-    triggerVibration();
+  if (amount > 0) {
+    rubAmount.textContent = `${amount.toLocaleString('ru-RU')} ₽`;
+    usdAmount.textContent = `$${(amount / exchangeRate).toFixed(2)}`;
   } else {
-    alert('Голосовой ввод не поддерживается вашим браузером');
+    rubAmount.textContent = '0 ₽';
+    usdAmount.textContent = '$0.00';
   }
 }
 
-// Обработка платежа
-function processPayment() {
-  const amount = parseFloat(document.getElementById('amount-input').value);
+// ===== ФУНКЦИИ ДЛЯ СТРАНИЦЫ СКЛАДА =====
+let storageItems = [];
+
+function initStoragePage() {
+  loadStorageItems();
+  updateStorageDisplay();
+  setupStorageEventListeners();
+}
+
+function loadStorageItems() {
+  // Загружаем товары из localStorage или используем демо-данные
+  const storedItems = localStorage.getItem('storageItems');
   
-  if (!amount || amount <= 0) {
-    alert('Введите корректную сумму');
-    return;
-  }
-  
-  if (paymentCards.length === 0) {
-    alert('Добавьте карту для оплаты');
-    return;
-  }
-  
-  // Показываем индикатор загрузки
-  const payButton = document.querySelector('.payment-pay');
-  payButton.classList.add('loading');
-  
-  // Имитация процесса оплаты
-  setTimeout(() => {
-    payButton.classList.remove('loading');
-    showPaymentSuccess(amount);
-  }, 2000);
-}
-
-// Показ успешного платежа
-function showPaymentSuccess(amount) {
-  alert(`Платеж на ${amount} P успешно выполнен!`);
-  
-  // Обновляем баланс пользователя
-  updateUserBalance(amount);
-  
-  // Возвращаемся в каюту
-  showPage(cabinetPage);
-}
-
-// Обновление баланса пользователя
-function updateUserBalance(amount) {
-  const currentBalance = parseFloat(localStorage.getItem('userBalance') || '0');
-  const newBalance = currentBalance + amount;
-  localStorage.setItem('userBalance', newBalance.toFixed(2));
-  document.getElementById('balance').textContent = newBalance.toFixed(2);
-}
-
-// Выбор способа оплаты
-function selectPaymentMethod(method) {
-  hidePaymentModal();
-  alert(`Выбран способ оплаты: ${method}`);
-  // Здесь можно добавить логику для разных способов оплаты
-}
-
-// Функции для модального окна карты
-function showCardModal() {
-  document.getElementById('card-modal').classList.add('show');
-  document.getElementById('cardNumberInput').focus();
-  // Очищаем поля при открытии
-  document.getElementById('cardNumberInput').value = '';
-  document.getElementById('cardHolderInput').value = '';
-  document.getElementById('cardExpiryInput').value = '';
-  document.getElementById('cardCvcInput').value = '';
-  document.getElementById('cardBrand').textContent = '';
-  document.getElementById('cardBrand').classList.remove('show');
-  document.getElementById('deleteCardBtn').style.display = 'none';
-  triggerVibration();
-}
-
-function hideAddCardModal() {
-  document.getElementById('card-modal').classList.remove('show');
-}
-
-function hideSuccessModal() {
-  document.getElementById('success-modal').classList.remove('show');
-}
-
-// Обработчики для модального окна карты
-document.getElementById('saveCardBtn').addEventListener('click', saveCard);
-document.getElementById('deleteCardBtn').addEventListener('click', deleteCard);
-document.getElementById('cardNumberInput').addEventListener('input', formatCardNumber);
-document.getElementById('cardExpiryInput').addEventListener('input', formatExpiry);
-
-// Обновите функцию addNewCard
-function addNewCard() {
-  showCardModal();
-}
-
-// Обновите функцию showPaymentModal (другие способы оплаты)
-function showPaymentModal() {
-  document.getElementById('payment-modal').classList.add('show');
-}
-
-function hidePaymentModal() {
-  document.getElementById('payment-modal').classList.remove('show');
-}
-
-// ===== ПЕРЕМЕННЫЕ СТРАНИЦЫ ТОВАРОВ ===== 
-// УБИРАЕМ повторные объявления - эти переменные уже объявлены выше!
-// let productsPageInitialized = false; // УДАЛИТЬ
-// let cartItems = []; // УДАЛИТЬ
-// let favorites = []; // УДАЛИТЬ
-let currentProduct = null;
-let currentImageIndex = 0;
-// let activeCategory = 'all'; // УДАЛИТЬ
-// let activeTab = 'products'; // УДАЛИТЬ
-
-// ===== ФУНКЦИИ УПРАВЛЕНИЯ СТРАНИЦЕЙ ===== 
-function showProductsPage() {
-    const allPages = [
-        document.getElementById('main-page'),
-        document.getElementById('cabinet-page'),
-        document.getElementById('treasure-page'),
-        document.getElementById('storage-page'),
-        document.getElementById('payment-page'),
-        document.getElementById('expenses-page'),
-        document.getElementById('profile-page'),
-        document.getElementById('reviews-page')
+  if (storedItems) {
+    storageItems = JSON.parse(storedItems);
+  } else {
+    // Демо-данные для склада
+    storageItems = [
+      {
+        id: 1,
+        name: "Золотые часы",
+        category: "Часы",
+        price: 15000,
+        quantity: 3,
+        image: "clock",
+        inStock: 5,
+        isNew: true
+      },
+      {
+        id: 2,
+        name: "Беспроводные наушники",
+        category: "Наушники",
+        price: 8000,
+        quantity: 2,
+        image: "headphones",
+        inStock: 8,
+        isNew: false
+      },
+      {
+        id: 3,
+        name: "Серебряное кольцо",
+        category: "Украшения",
+        price: 5000,
+        quantity: 1,
+        image: "gem",
+        inStock: 3,
+        isNew: true
+      }
     ];
-
-    allPages.forEach(page => {
-        if (page) page.style.display = 'none';
-    });
-
-    const productsPage = document.getElementById('products-page');
-    if (productsPage) {
-        productsPage.style.display = 'block';
-    }
-
-    // Используем глобальные переменные
-    if (!window.productsPageInitialized) {
-        initProductsPage();
-        window.productsPageInitialized = true;
-    } else if (window.loadProducts) {
-        window.loadProducts();
-    }
-
-    updateActiveNav(null);
-    triggerVibration();
-}
-
-function hideProductsPage() {
-    const productsPage = document.getElementById('products-page');
-    if (productsPage) {
-        productsPage.style.display = 'none';
-    }
-    showPage(document.getElementById('main-page'));
-    triggerVibration();
-}
-
-// ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===== 
-// ОСТАВЛЯЕМ ТОЛЬКО ОДИН РАЗ объявление этих переменных!
-let currentPage = 'main-page';
-let productsPageInitialized = false;
-let activeCategory = 'all';
-let activeTab = 'products';
-let favorites = [];
-let cartItems = [];
-
-// ===== ДАННЫЕ ТОВАРОВ ===== 
-const products = [
-    { 
-        id: 1, 
-        title: "Часы Premium Black", 
-        images: [
-            "https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-            "https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-        ], 
-        description: "Роскошные черные часы с автоматическим механизмом. Сапфировое стекло, водонепроницаемость 50м, кожаный ремешок.", 
-        price: 24990, 
-        category: "watches", 
-        rating: 4.8, 
-        reviews: 24, 
-        keywords: ["часы", "премиум", "черные", "кожаный ремешок"] 
-    },
-    { 
-        id: 2, 
-        title: "Наушники Pro Sound", 
-        images: [
-            "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-            "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-        ], 
-        description: "Беспроводные наушники с активным шумоподавлением. 30 часов работы, влагозащита, премиальное звучание.", 
-        price: 18990, 
-        category: "headphones", 
-        rating: 4.5, 
-        reviews: 18, 
-        keywords: ["наушники", "беспроводные", "шумоподавление", "pro"] 
-    },
-    { 
-        id: 3, 
-        title: "Золотое кольцo", 
-        images: [
-            "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-        ], 
-        description: "Элегантное золотое кольцо с бриллиантом.", 
-        price: 45990, 
-        category: "jewelry", 
-        rating: 4.9, 
-        reviews: 32, 
-        keywords: ["кольцо", "золото", "бриллиант", "украшение"] 
-    }
-];
-
-// ===== ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ =====
-function initProductsPage() {
-    console.log('🚀 Инициализация страницы товаров...');
-    
-    // Используем уже объявленные глобальные переменные
-    if (typeof activeCategory === 'undefined') activeCategory = 'all';
-    if (typeof activeTab === 'undefined') activeTab = 'products';
-    if (typeof favorites === 'undefined') favorites = [];
-    if (typeof cartItems === 'undefined') cartItems = [];
-    if (typeof productsPageInitialized === 'undefined') productsPageInitialized = false;
-    
-    productsPageInitialized = true;
-
-    // ===== DOM ЭЛЕМЕНТЫ =====
-    const productsFeed = document.getElementById('productsFeed');
-    const searchInput = document.getElementById('searchInputProducts');
-    const categoriesToggle = document.getElementById('categoriesToggle');
-    const categoriesDropdown = document.getElementById('categoriesDropdown');
-    const emptyState = document.getElementById('emptyState');
-    const tabProducts = document.getElementById('tabProducts');
-    const tabWishlist = document.getElementById('tabWishlist');
-    const sortSelect = document.getElementById('sortSelect');
-
-    // ===== ПРОВЕРКА ЭЛЕМЕНТОВ =====
-    if (!productsFeed) { console.error('❌ Не найден productsFeed'); return; }
-    if (!categoriesToggle) { console.error('❌ Не найден categoriesToggle'); return; }
-    if (!categoriesDropdown) { console.error('❌ Не найден categoriesDropdown'); return; }
-
-    console.log('✅ Все элементы найдены');
-
-    // ===== ИНИЦИАЛИЗАЦИЯ КНОПКИ КАТЕГОРИЙ =====
-    categoriesToggle.addEventListener('click', function(e) {
-        e.stopPropagation();
-        console.log('📁 Клик по кнопке категорий');
-        categoriesToggle.classList.toggle('active');
-        categoriesDropdown.classList.toggle('active');
-    });
-
-    // Закрытие dropdown при клике вне его
-    document.addEventListener('click', function(e) {
-        if (categoriesDropdown.classList.contains('active') &&
-            !categoriesToggle.contains(e.target) && 
-            !categoriesDropdown.contains(e.target)) {
-            categoriesToggle.classList.remove('active');
-            categoriesDropdown.classList.remove('active');
-        }
-    });
-
-    // ===== ОБРАБОТЧИК ПОИСКА =====
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(function() {
-            console.log('🔍 Поиск:', searchInput.value);
-            loadProducts(activeCategory, searchInput.value);
-        }, 300));
-    }
-
-    // ===== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК =====
-    if (tabProducts && tabWishlist) {
-        tabProducts.addEventListener('click', function() {
-            tabProducts.classList.add('active');
-            tabWishlist.classList.remove('active');
-            activeTab = 'products';
-            loadProducts(activeCategory, searchInput.value);
-        });
-
-        tabWishlist.addEventListener('click', function() {
-            tabWishlist.classList.add('active');
-            tabProducts.classList.remove('active');
-            activeTab = 'wishlist';
-            loadProducts(activeCategory, searchInput.value);
-        });
-    }
-
-    // ===== СОРТИРОВКА =====
-    if (sortSelect) {
-        sortSelect.addEventListener('change', function() {
-            loadProducts(activeCategory, searchInput.value);
-        });
-    }
-
-    // ===== ФУНКЦИЯ ЗАГРУЗКИ ТОВАРОВ =====
-    function loadProducts(category = activeCategory, searchQuery = '') {
-        console.log('📦 Загрузка товаров:', category, searchQuery);
-        
-        if (!productsFeed || !emptyState) return;
-        
-        createSkeletons();
-        
-        // Имитация загрузки
-        setTimeout(function() {
-            let filtered = products.filter(function(product) {
-                // Проверка категории
-                const matchesCategory = category === 'all' || product.category === category;
-                
-                // Проверка поискового запроса
-                if (searchQuery.trim() === '') return matchesCategory;
-                
-                const query = searchQuery.toLowerCase().trim();
-                const searchText = [
-                    product.title.toLowerCase(),
-                    product.description.toLowerCase(),
-                    ...(product.keywords || [])
-                ].join(' ');
-                
-                return matchesCategory && searchText.includes(query);
-            });
-
-            // Фильтрация избранного если активна вкладка wishlist
-            if (activeTab === 'wishlist') {
-                filtered = filtered.filter(product => favorites.includes(product.id));
-            }
-
-            // Сортировка
-            const sortValue = sortSelect ? sortSelect.value : 'none';
-            switch(sortValue) {
-                case 'priceAsc':
-                    filtered.sort((a, b) => a.price - b.price);
-                    break;
-                case 'priceDesc':
-                    filtered.sort((a, b) => b.price - a.price);
-                    break;
-                case 'ratingDesc':
-                    filtered.sort((a, b) => b.rating - a.rating);
-                    break;
-            }
-
-            renderCards(filtered);
-        }, 500);
-    }
-
-    // ===== ФУНКЦИЯ ОТРИСОВКИ КАРТОЧЕК =====
-    function renderCards(productsList) {
-        if (!productsFeed || !emptyState) return;
-        
-        productsFeed.innerHTML = '';
-        
-        if (productsList.length === 0) {
-            emptyState.style.display = 'block';
-            productsFeed.style.display = 'none';
-            return;
-        }
-        
-        emptyState.style.display = 'none';
-        productsFeed.style.display = 'grid';
-        
-        productsList.forEach(function(product) {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.innerHTML = `
-                <div class="product-brand">FOLLEN & SHAID</div>
-                <img src="${product.images[0]}" class="product-image" alt="${product.title}">
-                <div class="product-content">
-                    <h3 class="product-title">${product.title}</h3>
-                    <div class="product-price">${product.price.toLocaleString()} ₽</div>
-                    <div class="product-rating">
-                        ★ ${product.rating} (${product.reviews})
-                    </div>
-                </div>
-            `;
-            
-            card.addEventListener('click', function() {
-                openProductPage(product);
-            });
-            
-            productsFeed.appendChild(card);
-        });
-    }
-
-    // ===== ФУНКЦИИ ДЛЯ СТРАНИЦЫ ТОВАРА =====
-    function openProductPage(product) {
-        const productPage = document.getElementById('productPage');
-        const carouselInner = document.getElementById('carouselInner');
-        const carouselIndicators = document.getElementById('carouselIndicators');
-        
-        if (!productPage || !carouselInner) return;
-        
-        // Заполняем галерею
-        carouselInner.innerHTML = '';
-        carouselIndicators.innerHTML = '';
-        
-        product.images.forEach((image, index) => {
-            const slide = document.createElement('div');
-            slide.className = 'carousel-slide';
-            slide.innerHTML = `<img src="${image}" alt="${product.title}">`;
-            carouselInner.appendChild(slide);
-            
-            const indicator = document.createElement('div');
-            indicator.className = 'carousel-indicator';
-            if (index === 0) indicator.classList.add('active');
-            carouselIndicators.appendChild(indicator);
-        });
-        
-        // Заполняем информацию
-        document.getElementById('productPageTitle').textContent = product.title;
-        document.getElementById('productPagePrice').textContent = `${product.price.toLocaleString()} ₽`;
-        document.getElementById('productPageDescription').textContent = product.description;
-        
-        // Рейтинг
-        const ratingStars = document.getElementById('productRatingStars');
-        const ratingCount = document.getElementById('productRatingCount');
-        if (ratingStars) ratingStars.innerHTML = '★'.repeat(Math.round(product.rating));
-        if (ratingCount) ratingCount.textContent = `${product.reviews} отзывов`;
-        
-        // Показываем страницу
-        productPage.classList.add('active');
-    }
-
-    // ===== ГЛОБАЛЬНЫЕ ФУНКЦИИ =====
-    window.filterProducts = function(category) {
-        console.log('🎯 Фильтр по категории:', category);
-        activeCategory = category;
-        
-        const searchInput = document.getElementById('searchInputProducts');
-        loadProducts(category, searchInput ? searchInput.value : '');
-        
-        const categoriesToggle = document.getElementById('categoriesToggle');
-        const categoriesDropdown = document.getElementById('categoriesDropdown');
-        
-        if (categoriesToggle) categoriesToggle.classList.remove('active');
-        if (categoriesDropdown) categoriesDropdown.classList.remove('active');
-    };
-
-    window.closeProductPage = function() {
-        const productPage = document.getElementById('productPage');
-        if (productPage) {
-            productPage.classList.remove('active');
-        }
-    };
-
-    // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
-    function createSkeletons(count = 6) {
-        const productsFeed = document.getElementById('productsFeed');
-        if (!productsFeed) return;
-        
-        productsFeed.innerHTML = '';
-        productsFeed.style.display = 'grid';
-        
-        for(let i = 0; i < count; i++) {
-            const sk = document.createElement('div');
-            sk.className = 'skeleton-card';
-            sk.innerHTML = `
-                <div class="sk-image"></div>
-                <div class="sk-content">
-                    <div class="sk-line" style="width:80%"></div>
-                    <div class="sk-line" style="width:60%"></div>
-                    <div class="sk-line" style="width:40%"></div>
-                </div>
-            `;
-            productsFeed.appendChild(sk);
-        }
-    }
-
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction() {
-            const context = this;
-            const args = arguments;
-            const later = function() {
-                clearTimeout(timeout);
-                func.apply(context, args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    // ===== ЗАГРУЗКА ТОВАРОВ ПРИ ИНИЦИАЛИЗАЦИИ =====
-    loadProducts();
-}
-
-// ===== ФУНКЦИИ ПЕРЕКЛЮЧЕНИЯ СТРАНИЦ =====
-function showProductsPage() {
-    document.getElementById('main-page').style.display = 'none';
-    document.getElementById('products-page').style.display = 'block';
-    currentPage = 'products-page';
-    
-    if (!productsPageInitialized) {
-        initProductsPage();
-    } else {
-        // Перезагружаем товары если страница уже инициализирована
-        const searchInput = document.getElementById('searchInputProducts');
-        const loadProducts = window.loadProducts || function() {};
-        loadProducts(activeCategory, searchInput ? searchInput.value : '');
-    }
-}
-
-function hideProductsPage() {
-    document.getElementById('products-page').style.display = 'none';
-    document.getElementById('main-page').style.display = 'block';
-    currentPage = 'main-page';
-}
-
-// ===== ОБРАБОТЧИКИ СВАЙПОВ =====
-// Используем существующую переменную touchStartY или создаем если нет
-document.addEventListener('touchstart', function(e) {
-    if (currentPage === 'main-page' && window.scrollY <= 0) {
-        if (typeof touchStartY === 'undefined') touchStartY = 0;
-        touchStartY = e.touches[0].clientY;
-    }
-});
-
-document.addEventListener('touchend', function(e) {
-    if (currentPage === 'main-page' && touchStartY && window.scrollY <= 0) {
-        const touchEndY = e.changedTouches[0].clientY;
-        const diffY = touchEndY - touchStartY;
-        
-        if (diffY < -50) { // Свайп вверх
-            showProductsPage();
-        }
-        
-        touchStartY = 0;
-    }
-});
-
-// ===== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ =====
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('📱 Страница загружена');
-    
-    // Инициализируем глобальные переменные если их нет
-    if (typeof currentPage === 'undefined') currentPage = 'main-page';
-    if (typeof activeCategory === 'undefined') activeCategory = 'all';
-    if (typeof activeTab === 'undefined') activeTab = 'products';
-    if (typeof favorites === 'undefined') favorites = [];
-    if (typeof cartItems === 'undefined') cartItems = [];
-    if (typeof productsPageInitialized === 'undefined') productsPageInitialized = false;
-    if (typeof touchStartY === 'undefined') touchStartY = 0;
-    
-    // Добавляем обработчик для кнопки корзины
-    const cartButton = document.getElementById('bottomCartButton');
-    if (cartButton) {
-        cartButton.addEventListener('click', function() {
-            console.log('🛒 Открытие корзины');
-            // Здесь будет логика открытия корзины
-        });
-    }
-    
-    // Добавляем обработчик для кнопки "Добавить в корзину"
-    const addToCartBtn = document.getElementById('addToCartBtn');
-    if (addToCartBtn) {
-        addToCartBtn.addEventListener('click', function() {
-            console.log('➕ Добавление в корзину');
-            // Здесь будет логика добавления в корзину
-        });
-    }
-});
-
-// ===== ДОБАВЛЯЕМ СТИЛИ ДЛЯ СКЕЛЕТОНОВ =====
-// Проверяем, не добавлены ли стили уже
-if (!document.getElementById('skeleton-styles')) {
-    const style = document.createElement('style');
-    style.id = 'skeleton-styles';
-    style.textContent = `
-        .skeleton-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .sk-image {
-            width: 100%;
-            height: 180px;
-            background: #e9ecef;
-        }
-        
-        .sk-content {
-            padding: 12px;
-        }
-        
-        .sk-line {
-            height: 12px;
-            background: #e9ecef;
-            margin-bottom: 8px;
-            border-radius: 4px;
-        }
-        
-        .product-rating {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// Блокировка масштабирования только при мультитаче
-let isScrolling = false;
-
-document.addEventListener('touchstart', function(e) {
-  if (e.touches.length > 1) {
-    e.preventDefault();
-  }
-}, { passive: false });
-
-// Разрешаем скролл внутри элементов
-document.addEventListener('touchmove', function(e) {
-  const target = e.target;
-  const isScrollable = target.closest('.scrollable');
-  
-  if (!isScrollable && e.touches.length > 1) {
-    e.preventDefault();
-  }
-}, { passive: false });
-
-// Блокировка жестов масштабирования
-document.addEventListener('gesturestart', function(e) {
-  e.preventDefault();
-});
-
-document.addEventListener('gesturechange', function(e) {
-  e.preventDefault();
-});
-
-// Быстрые тапы (для zoom)
-let lastTouchEnd = 0;
-document.addEventListener('touchend', function(event) {
-  const now = Date.now();
-  if (now - lastTouchEnd <= 300) {
-    const target = event.target;
-    const isScrollable = target.closest('.scrollable');
-    
-    if (!isScrollable) {
-      event.preventDefault();
-    }
-  }
-  lastTouchEnd = now;
-}, false);
-
-// ===== ОБЪЕДИНЕННАЯ СИСТЕМА СВАЙПОВ С ПРОСТЫМИ АНИМАЦИЯМИ =====
-let touchStartX = 0;
-let touchStartY = 0;
-let isHorizontalSwipe = false;
-let isVerticalSwipe = false;
-let productsPageVisible = false;
-const SWIPE_THRESHOLD = 50;
-const productsPage = document.getElementById('products-page');
-const bottomNav = document.querySelector('.bottom-nav');
-
-// Функция для определения направления свайпа
-function handleSwipeGesture(currentPage, touchEndX, touchEndY) {
-  const diffX = touchEndX - touchStartX;
-  const diffY = touchEndY - touchStartY;
-  
-  if (isHorizontalSwipe && Math.abs(diffX) > SWIPE_THRESHOLD) {
-    // Горизонтальные свайпы для навигации
-    if (diffX > 0) {
-      // Свайп вправо - каюта появляется
-      if (currentPage === 'main-page') {
-        showPage(cabinetPage);
-        updateActiveNav(document.getElementById('cabinet-nav-item'));
-      } else if (currentPage === 'storage-page') {
-        showPage(mainPage);
-        updateActiveNav(null);
-      }
-    } else {
-      // Свайп влево - склад появляется
-      if (currentPage === 'main-page') {
-        showPage(storagePage);
-        updateActiveNav(document.getElementById('storage-nav-item'));
-      } else if (currentPage === 'cabinet-page') {
-        showPage(mainPage);
-        updateActiveNav(null);
-      }
-    }
-  } 
-  else if (isVerticalSwipe && Math.abs(diffY) > SWIPE_THRESHOLD) {
-    // Вертикальные свайпы для товаров
-    if (diffY < 0 && currentPage === 'main-page' && window.scrollY <= 0 && !productsPageVisible) {
-      // Свайп вверх на главной → открыть товары
-      showProductsPage();
-    }
-  }
-}
-// Простая функция показа страницы с fade-эффектом
-function showPage(pageToShow) {
-  // Сначала скрываем все страницы
-  const pages = [mainPage, cabinetPage, storagePage, treasurePage];
-  pages.forEach(page => {
-    if (page && page !== pageToShow) {
-      page.style.display = 'none';
-    }
-  });
-  
-  // Показываем нужную страницу с анимацией
-  if (pageToShow) {
-    pageToShow.style.display = 'block';
-    pageToShow.style.opacity = '0';
-    pageToShow.style.transition = 'opacity 0.3s ease';
-    
-    // Запускаем fade-in анимацию
-    setTimeout(() => {
-      pageToShow.style.opacity = '1';
-    }, 10);
-    
-    // Убираем transition после анимации
-    setTimeout(() => {
-      pageToShow.style.transition = '';
-      pageToShow.style.opacity = '';
-    }, 300);
+    localStorage.setItem('storageItems', JSON.stringify(storageItems));
   }
 }
 
-// Добавь вызов в обработчик свайпов
-function handleTouchEnd(e) {
-  productsPageVisible = true;
-  bottomNav.style.transition = 'transform 0.3s ease';
-  bottomNav.style.transform = 'translateY(100%)';
-  productsPage.style.display = 'block';
-  productsPage.style.opacity = '0';
-  productsPage.style.transform = 'translateY(20px)';
-  productsPage.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+function updateStorageDisplay() {
+  const storageGrid = document.getElementById('storage-grid');
+  if (!storageGrid) return;
   
-  setTimeout(() => {
-    productsPage.style.opacity = '1';
-    productsPage.style.transform = 'translateY(0)';
-  }, 10);
+  storageGrid.innerHTML = '';
   
-  if (document.getElementById('productsFeed').children.length === 0) {
-    loadProductsData();
-  }
-}
-
-// Функция для скрытия страницы товаров
-function hideProductsPage() {
-  productsPageVisible = false;
-  productsPage.style.transform = 'translateY(100%)';
-  productsPage.style.opacity = '0';
-  
-  setTimeout(() => {
-    productsPage.style.display = 'none';
-    bottomNav.style.transform = 'translateY(0)';
-  }, 300);
-}
-
-// Обработчик начала касания
-function handleTouchStart(e) {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-  isHorizontalSwipe = false;
-  isVerticalSwipe = false;
-}
-
-// Обработчик движения касания
-function handleTouchMove(e) {
-  if (!touchStartX) return;
-  
-  const currentX = e.touches[0].clientX;
-  const currentY = e.touches[0].clientY;
-  const diffX = currentX - touchStartX;
-  const diffY = currentY - touchStartY;
-  
-  // Определяем тип свайпа
-  if (Math.abs(diffX) > Math.abs(diffY)) {
-    isHorizontalSwipe = true;
-    isVerticalSwipe = false;
-  } else {
-    isHorizontalSwipe = false;
-    isVerticalSwipe = true;
-  }
-  
-  // Если это горизонтальный свайп, предотвращаем вертикальную прокрутку
-  if (Math.abs(diffX) > 10 && isHorizontalSwipe) {
-    e.preventDefault();
-  }
-  
-  // Обработка свайпа вниз для закрытия товаров
-  if (productsPageVisible && isVerticalSwipe && diffY > 0 && window.scrollY <= 0) {
-    e.preventDefault();
-    productsPage.style.opacity = 1 - diffY / 300;
-  }
-}
-
-// Обработчик окончания касания
-function handleTouchEnd(e) {
-  if (!touchStartX) return;
-  
-  const touchEndX = e.changedTouches[0].clientX;
-  const touchEndY = e.changedTouches[0].clientY;
-  const diffY = touchEndY - touchStartY;
-
-  // Определяем текущую страницу
-  let currentPage = '';
-  if (mainPage.style.display !== 'none') currentPage = 'main-page';
-  else if (cabinetPage.style.display !== 'none') currentPage = 'cabinet-page';
-  else if (storagePage.style.display !== 'none') currentPage = 'storage-page';
-  else if (treasurePage.style.display !== 'none') currentPage = 'treasure-page';
-  
-  // Обрабатываем горизонтальные свайпы
-  if (currentPage && currentPage !== 'treasure-page') {
-    handleSwipeGesture(currentPage, touchEndX, touchEndY);
-  }
-  
-  // Обработка свайпа вниз для закрытия товаров
-  if (productsPageVisible && isVerticalSwipe && diffY > 100 && window.scrollY <= 0) {
-    hideProductsPage();
-  } else if (productsPageVisible && isVerticalSwipe) {
-    productsPage.style.opacity = '1';
-  }
-  
-  // Сбрасываем начальные координаты
-  touchStartX = 0;
-  touchStartY = 0;
-  isHorizontalSwipe = false;
-  isVerticalSwipe = false;
-}
-
-// Добавляем обработчики свайпов ко всем страницам
-function initSwipeNavigation() {
-  const pages = [mainPage, cabinetPage, storagePage, treasurePage, productsPage];
-  
-  pages.forEach(page => {
-    if (page) {
-      page.addEventListener('touchstart', handleTouchStart, { passive: true });
-      page.addEventListener('touchmove', handleTouchMove, { passive: false });
-      page.addEventListener('touchend', handleTouchEnd, { passive: true });
-    }
-  });
-}
-
-// Инициализация свайп-навигации после загрузки DOM
-initSwipeNavigation();
-  
- // Переменные для страницы отзывов
-let reviewsPageInitialized = false;
-const REVIEWS_STORAGE_KEY = 'follen_shaid_reviews';
-
-// Функция для показа страницы отзывов
-function showReviewsPage() {
-  // Скрываем все страницы
-  const allPages = [mainPage, cabinetPage, treasurePage, storagePage, paymentPage, reviewsPage];
-  allPages.forEach(page => {
-    if (page) page.style.display = 'none';
-  });
-  
-  // Показываем страницу отзывов
-  reviewsPage.style.display = 'block';
-  
-  // Инициализируем страницу отзывов при первом открытии
-  if (!reviewsPageInitialized) {
-    initReviewsPage();
-    reviewsPageInitialized = true;
-  }
-  
-  // Обновляем активную навигацию (ничего не выделяем)
-  updateActiveNav(null);
-  triggerVibration();
-}
-
-// Функция для скрытия страницы отзывов
-function hideReviewsPage() {
-  reviewsPage.style.display = 'none';
-  showPage(cabinetPage); // Возвращаемся в каюту
-  updateActiveNav(document.getElementById('cabinet-nav-item'));
-  triggerVibration();
-}
-
-// Инициализация страницы отзывов
-function initReviewsPage() {
-  // Получаем элементы
-  const reviewText = document.getElementById('review-text');
-  const reviewSubmitBtn = document.getElementById('review-submit-btn');
-  const reviewsListContainer = document.getElementById('reviews-list-container');
-  const reviewCharRemaining = document.getElementById('review-char-remaining');
-  const reviewProfanityError = document.getElementById('review-profanity-error');
-  const reviewRefreshBtn = document.getElementById('review-refresh-btn');
-  
-  // Генерация уникального ID пользователя
-  let userId, username;
-  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-    const user = Telegram.WebApp.initDataUnsafe.user;
-    userId = user.id.toString();
-    username = user.username || user.first_name || 'User_' + userId.substr(0, 4);
-  } else {
-    userId = 'user_' + Math.random().toString(36).substr(2, 9);
-    username = 'User_' + userId.substr(0, 4);
-  }
-  
-  // Список нецензурных слов
-  const profanityList = [
-    'бля', 'блять', 'хуй', 'пизда', 'ебал', 'ебать', 'нахер', 
-    'нахрен', 'гондон', 'мудак', 'сука', 'тварь', 'долбаёб'
-  ];
-  
-  // Проверяем, оставлял ли пользователь уже отзыв
-  const userReviewedKey = `user_reviewed_${userId}`;
-  if (localStorage.getItem(userReviewedKey)) {
-    hideReviewFormAndShowThankYou();
-  }
-  
-  // Загружаем существующие отзывы
-  loadReviews();
-  
-  // Обработчик кнопки обновления
-  reviewRefreshBtn.addEventListener('click', function() {
-    reviewRefreshBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Обновление...';
-    loadReviews();
-    setTimeout(() => {
-      reviewRefreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Обновить отзывы';
-      showReviewNotification('Отзывы обновлены');
-    }, 800);
-  });
-  
-  // Счетчик символов
-  reviewText.addEventListener('input', function() {
-    const remaining = 500 - reviewText.value.length;
-    reviewCharRemaining.textContent = remaining;
-    
-    if (remaining < 20) {
-      reviewCharRemaining.style.color = '#ff453a';
-    } else {
-      reviewCharRemaining.style.color = '#8e8e93';
-    }
-  });
-  
-  // Обработчик отправки отзыва
-  reviewSubmitBtn.addEventListener('click', submitReview);
-  
-  // Обработчик отправки по Enter (с зажатым Ctrl)
-  reviewText.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && e.ctrlKey) {
-      submitReview();
-    }
-  });
-  
-  // Функция отправки отзыва
-  async function submitReview() {
-    const text = reviewText.value.trim();
-    
-    if (text === '') {
-      showReviewNotification('Пожалуйста, напишите отзыв', true);
-      reviewText.classList.add('review-shake');
-      setTimeout(() => reviewText.classList.remove('review-shake'), 400);
-      return;
-    }
-    
-    // Проверка на нецензурную брань
-    if (containsProfanity(text)) {
-      reviewProfanityError.style.display = 'block';
-      reviewText.classList.add('review-shake');
-      setTimeout(() => {
-        reviewText.classList.remove('review-shake');
-        setTimeout(() => reviewProfanityError.style.display = 'none', 3000);
-      }, 400);
-      return;
-    }
-    
-    if (localStorage.getItem(userReviewedKey)) {
-      showReviewNotification('Вы уже оставили отзыв', true);
-      return;
-    }
-    
-    // Сохраняем отзыв
-    await saveReview(text);
-    
-    // Очищаем текстовое поле
-    reviewText.value = '';
-    reviewCharRemaining.textContent = 500;
-    reviewCharRemaining.style.color = '#8e8e93';
-    
-    // Показываем уведомление
-    showReviewNotification('Ваш отзыв добавлен!');
-    
-    // Обновляем список отзывов
-    loadReviews();
-    
-    // Скрываем форму и показываем сообщение
-    hideReviewFormAndShowThankYou();
-    
-    // Сохраняем информацию, что пользователь уже оставил отзыв
-    localStorage.setItem(userReviewedKey, 'true');
-  }
-  
-  // Функция скрытия формы и показа благодарности
-  function hideReviewFormAndShowThankYou() {
-    const reviewForm = document.getElementById('review-form');
-    const reviewFormContainer = document.getElementById('review-form-container');
-    
-    // Заменяем форму на сообщение с благодарностью
-    reviewFormContainer.innerHTML = `
-      <div class="review-thank-you">
-        <i class="fas fa-check-circle"></i>
-        <h2>Спасибо за ваш отзыв!</h2>
-        <p>Ваше мнение очень важно для нас.</p>
+  if (storageItems.length === 0) {
+    storageGrid.innerHTML = `
+      <div class="empty-storage">
+        <i class="fas fa-box-open"></i>
+        <p>Склад пуст</p>
+        <button onclick="addSampleItems()" class="btn-primary">Добавить товары</button>
       </div>
     `;
+    return;
   }
   
-  // Функция проверки на нецензурную лексику
-  function containsProfanity(text) {
-    const lowerText = text.toLowerCase();
-    return profanityList.some(word => lowerText.includes(word));
-  }
-  
-  async function saveReview(text) {
-    // Получаем существующие отзывы
-    let reviews = await getReviewsStorage();
-    
-    // Создаем новый отзыв
-    const newReview = {
-      id: Date.now(),
-      text: text,
-      date: new Date().toLocaleDateString('ru-RU'),
-      author: username,
-      avatarText: username.charAt(0).toUpperCase(),
-      userId: userId,
-      timestamp: Date.now()
-    };
-    
-    // Добавляем новый отзыв в начало массива
-    reviews.unshift(newReview);
-    
-    // Сохраняем обновленный массив отзывов
-    await setReviewsStorage(reviews);
-  }
-  
-  async function loadReviews() {
-    // Получаем отзывы
-    const reviews = await getReviewsStorage();
-    
-    // Очищаем контейнер
-    reviewsListContainer.innerHTML = '';
-    
-    if (reviews.length === 0) {
-      reviewsListContainer.innerHTML = `
-        <div class="review-empty-state">
-          <i class="far fa-comments"></i>
-          <p>Пока нет отзывов. Будьте первым!</p>
+  storageItems.forEach((item, index) => {
+    const itemElement = document.createElement('div');
+    itemElement.className = 'storage-item';
+    itemElement.innerHTML = `
+      <div class="storage-item-image">
+        <i class="fas fa-${item.image}"></i>
+        ${item.isNew ? '<span class="new-badge">NEW</span>' : ''}
+      </div>
+      <div class="storage-item-info">
+        <h4>${item.name}</h4>
+        <p class="storage-item-category">${item.category}</p>
+        <p class="storage-item-price">${item.price.toLocaleString('ru-RU')} ₽</p>
+        <div class="storage-item-meta">
+          <span>На складе: ${item.inStock}</span>
+          <span>У вас: ${item.quantity}</span>
         </div>
-      `;
-      return;
-    }
-    
-    // Добавляем каждый отзыв в контейнер
-    reviews.forEach(review => {
-      const reviewElement = document.createElement('div');
-      reviewElement.className = 'review-item';
-      reviewElement.innerHTML = `
-        <div class="review-avatar">${review.avatarText}</div>
-        <div class="review-content">
-          <div class="review-header">
-            <span class="review-user-name">${review.author}</span>
-            <span class="review-date">${review.date}</span>
-          </div>
-          <p class="review-text">${review.text}</p>
-        </div>
-      `;
-      
-      // Подсвечиваем собственные отзывы
-      if (review.userId === userId) {
-        reviewElement.style.borderLeft = '3px solid #34c759';
-      }
-      
-      reviewsListContainer.appendChild(reviewElement);
-    });
-  }
-  
-  function showReviewNotification(message, isError = false) {
-    const notification = document.createElement('div');
-    notification.className = `review-notification ${isError ? 'review-limit-notification' : ''}`;
-    
-    const icon = document.createElement('i');
-    icon.className = isError ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
-    
-    notification.appendChild(icon);
-    notification.appendChild(document.createTextNode(message));
-    
-    document.body.appendChild(notification);
-    
-    // Удаляем уведомление после анимации
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
-  }
-  
-  // Функции для работы с хранилищем
-  async function getReviewsStorage() {
-    try {
-      const localData = localStorage.getItem(REVIEWS_STORAGE_KEY);
-      return localData ? JSON.parse(localData) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-  
-  async function setReviewsStorage(data) {
-    try {
-      const dataStr = JSON.stringify(data);
-      localStorage.setItem(REVIEWS_STORAGE_KEY, dataStr);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-  
-  // Периодическое обновление отзывов (каждые 15 секунд)
-  setInterval(loadReviews, 15000);
+      </div>
+      <div class="storage-item-actions">
+        <button onclick="sellItem(${index})" class="btn-sell" ${item.quantity === 0 ? 'disabled' : ''}>
+          <i class="fas fa-coins"></i>
+          Продать
+        </button>
+        <button onclick="useItem(${index})" class="btn-use" ${item.quantity === 0 ? 'disabled' : ''}>
+          <i class="fas fa-use"></i>
+          Использовать
+        </button>
+      </div>
+    `;
+    storageGrid.appendChild(itemElement);
+  });
 }
 
-// Обновите обработчик кнопки "Отзывы" в каюте
-function setupReviewsButton() {
-  const reviewsButton = document.querySelector('a[href="https://t.me/FOLLENSHAIDbot?startapp=0bff92cd6d10d69a"]');
-  if (reviewsButton) {
-    reviewsButton.addEventListener('click', function(e) {
-      e.preventDefault();
-      showReviewsPage();
-    });
-  }
-}
-
-// Вызовите эту функцию при инициализации приложения
-document.addEventListener('DOMContentLoaded', function() {
-  // ... ваш существующий код инициализации ...
-  
-  // Добавьте эту строку в конец функции
-  setupReviewsButton();
-});
-
-// ===== КОД ДЛЯ СТРАНИЦЫ СКЛАДА (НОВАЯ КОРЗИНА) =====
-// МЕНЯЕМ имена переменных чтобы избежать конфликта
-let storageCart = [];
-let storageOrders = [];
-let storageDiscount = 0;
-let storagePromoApplied = false;
-let storageDeliveryCost = 0;
-
-// Функция для получения корзины по умолчанию
-function getDefaultCart() {
-    return [
-        { id: 1, name: "iPhone 13 Pro", price: 89990, originalPrice: 99990, image: "mobile-alt", quantity: 1, category: "Электроника", inStock: 5, isNew: true },
-        { id: 2, name: "AirPods Pro", price: 19990, image: "headphones", quantity: 2, category: "Аксессуары", inStock: 10 },
-        { id: 3, name: "Apple Watch S7", price: 39990, image: "clock", quantity: 1, category: "Электроника", inStock: 3 }
-    ];
-}
-
-// Инициализация страницы склада
-function initStoragePage() {
-    console.log("Инициализация страницы склада");
-    
-    // Загрузка данных из localStorage
-    try {
-        const savedCart = localStorage.getItem('storageCart');
-        const savedOrders = localStorage.getItem('storageOrders');
-        
-        storageCart = savedCart ? JSON.parse(savedCart) : getDefaultCart();
-        storageOrders = savedOrders ? JSON.parse(savedOrders) : [
-            { id: 1001, date: "12.08.2023", items: ["iPhone 13 Pro", "Чехол для iPhone"], total: 92980, status: "delivered" },
-            { id: 1002, date: "05.08.2023", items: ["AirPods Pro"], total: 19990, status: "delivered" },
-            { id: 1003, date: "28.07.2023", items: ["MacBook Pro 14", "Apple Watch S7"], total: 239980, status: "processing" }
-        ];
-    } catch (e) {
-        console.error("Ошибка загрузки данных:", e);
-        storageCart = getDefaultCart();
-        storageOrders = [];
-    }
-
-    // Настройка обработчиков событий
-    setupStorageEventListeners();
-    
-    // Рендер содержимого
-    renderCartItems();
-    renderSuggestions();
-    renderOrderHistory();
-    updateTotal();
-}
-
-// Настройка обработчиков событий для склада
 function setupStorageEventListeners() {
-    console.log("Настройка обработчиков склада");
-    
-    // Переключение вкладок
-    const tabs = document.querySelectorAll('.storage-tab');
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            // Убираем активный класс у всех вкладок
-            tabs.forEach(t => t.classList.remove('active'));
-            // Добавляем активный класс текущей вкладке
-            this.classList.add('active');
-            
-            const tabType = this.getAttribute('data-tab');
-            const cartContent = document.querySelector('.cart-content');
-            const orderedContent = document.querySelector('.ordered-content');
-            
-            if (tabType === 'cart' && cartContent && orderedContent) {
-                cartContent.classList.remove('hidden');
-                orderedContent.classList.add('hidden');
-            } else if (cartContent && orderedContent) {
-                cartContent.classList.add('hidden');
-                orderedContent.classList.remove('hidden');
-                renderOrderHistory();
-            }
-        });
-    });
-
-    // Кнопка оформления заказа
-    const checkoutBtn = document.querySelector('.checkout-btn');
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', function() {
-            const checkoutPage = document.querySelector('.checkout-page');
-            if (checkoutPage) checkoutPage.classList.add('visible');
-        });
-    }
-
-    // Кнопка назад в оформлении
-    const backBtn = document.querySelector('.back-checkout-btn');
-    if (backBtn) {
-        backBtn.addEventListener('click', function() {
-            const checkoutPage = document.querySelector('.checkout-page');
-            if (checkoutPage) checkoutPage.classList.remove('visible');
-        });
-    }
-
-    // Промокод
-    const applyPromoBtn = document.querySelector('.apply-promo-btn');
-    if (applyPromoBtn) {
-        applyPromoBtn.addEventListener('click', applyPromoCode);
-    }
-
-    const promoInput = document.querySelector('.promo-input');
-    if (promoInput) {
-        promoInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                applyPromoCode();
-            }
-        });
-    }
-
-    // Поиск
-    const searchInput = document.querySelector('.search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', renderCartItems);
-    }
-
-    // Фильтры
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    filterButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            filterButtons.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            showToast('Фильтр применен: ' + this.textContent);
-        });
-    });
-
-    // Варианты доставки
-    const shippingOptions = document.querySelectorAll('.shipping-option');
-    shippingOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            shippingOptions.forEach(o => {
-                const select = o.querySelector('.option-select');
-                if (select) select.classList.remove('selected');
-            });
-            
-            const select = this.querySelector('.option-select');
-            if (select) select.classList.add('selected');
-            
-            const priceElement = this.querySelector('.option-price');
-            if (priceElement) {
-                const priceText = priceElement.textContent;
-                if (priceText === '490 ₽') {
-                    storageDeliveryCost = 490;
-                } else {
-                    storageDeliveryCost = 0;
-                }
-                
-                updateTotal();
-            }
-        });
-    });
+  // Поиск на складе
+  const storageSearch = document.getElementById('storage-search');
+  if (storageSearch) {
+    storageSearch.addEventListener('input', filterStorageItems);
+  }
+  
+  // Сортировка
+  const sortSelect = document.getElementById('storage-sort');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', sortStorageItems);
+  }
 }
 
-// Рендер товаров в корзине
-function renderCartItems() {
-    console.log("renderCartItems called");
-    const cartItemsContainer = document.querySelector('.cart-items');
-    if (!cartItemsContainer) {
-        console.error("Контейнер корзины не найден");
-        return;
-    }
-    
-    cartItemsContainer.innerHTML = '';
-    
-    if (storageCart.length === 0) {
-        cartItemsContainer.innerHTML = `
-            <div class="empty-cart">
-                <i class="fas fa-shopping-cart" style="font-size: 50px; margin-bottom: 20px;"></i>
-                <h3>Ваша корзина пуста</h3>
-                <p>Добавьте товары из каталога</p>
-            </div>
-        `;
-        const checkoutBtn = document.querySelector('.checkout-btn');
-        if (checkoutBtn) checkoutBtn.disabled = true;
-        return;
-    }
-    
-    const checkoutBtn = document.querySelector('.checkout-btn');
-    if (checkoutBtn) checkoutBtn.disabled = false;
-    
-    // Применение поискового фильтра
-    const searchInput = document.querySelector('.search-input');
-    const searchText = searchInput ? searchInput.value.toLowerCase() : '';
-    const filteredCart = searchText ? 
-        storageCart.filter(item => item.name.toLowerCase().includes(searchText)) : 
-        storageCart;
-    
-    if (filteredCart.length === 0) {
-        cartItemsContainer.innerHTML = `
-            <div class="empty-cart">
-                <i class="fas fa-search" style="font-size: 50px; margin-bottom: 20px;"></i>
-                <h3>Ничего не найдено</h3>
-                <p>Попробуйте изменить поисковый запрос</p>
-            </div>
-        `;
-        return;
-    }
-    
-    filteredCart.forEach((product, index) => {
-        const cartItem = document.createElement('div');
-        cartItem.className = 'cart-item';
-        cartItem.dataset.id = product.id;
-        
-        const itemTotal = product.price * product.quantity;
-        const onSale = product.originalPrice && product.originalPrice > product.price;
-        const stockStatus = product.inStock > 5 ? 'in-stock' : (product.inStock > 0 ? 'low-stock' : 'out-of-stock');
-        const stockText = product.inStock > 5 ? 'В наличии' : (product.inStock > 0 ? `Осталось мало: ${product.inStock} шт.` : 'Нет в наличии');
-        
-        cartItem.innerHTML = `
-            <div class="item-image">
-                <i class="fas fa-${product.image}" style="font-size: 40px; color: #888;"></i>
-                ${product.isNew ? '<div class="item-badge">NEW</div>' : ''}
-            </div>
-            <div class="item-details">
-                <div class="item-category">${product.category}</div>
-                <h3 class="item-name">${product.name}</h3>
-                <div class="item-price">
-                    ${onSale ? `<span class="original-price">${product.originalPrice.toLocaleString('ru-RU')} ₽</span>` : ''}
-                    ${product.price.toLocaleString('ru-RU')} ₽
-                    ${onSale ? '<span class="sale-badge">Скидка</span>' : ''}
-                </div>
-                <div class="item-total">${itemTotal.toLocaleString('ru-RU')} ₽</div>
-                <div class="stock-info ${stockStatus}">${stockText}</div>
-                <div class="item-quantity">
-                    <div class="quantity-btn minus" data-id="${product.id}">
-                        <i class="fas fa-minus"></i>
-                    </div>
-                    <span class="quantity-value">${product.quantity}</span>
-                    <div class="quantity-btn plus" data-id="${product.id}">
-                        <i class="fas fa-plus"></i>
-                    </div>
-                </div>
-            </div>
-            <button class="favorite-btn" data-id="${product.id}">
-                <i class="fas fa-heart"></i>
-            </button>
-            <span class="swipe-hint"><i class="fas fa-chevron-left"></i> Свайп для действий</span>
-            <div class="swipe-actions">
-                <div class="swipe-left-action">
-                    <span class="swipe-action-text">Удалить</span>
-                </div>
-                <div class="swipe-right-action">
-                    <span class="swipe-action-text">Купить</span>
-                </div>
-            </div>
-        `;
-        
-        cartItemsContainer.appendChild(cartItem);
-        
-        // Настройка свайпа
-        setupSwipe(cartItem, product.id);
-        
-        // Анимация задержки
-        cartItem.style.animationDelay = `${index * 0.1}s`;
-        cartItem.classList.add('slide-in');
-        
-        // Установка статуса избранного
-        const favoriteBtn = cartItem.querySelector('.favorite-btn');
-        let favorites = [];
-        try {
-            favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-        } catch (e) {
-            console.error("Ошибка загрузки избранного:", e);
-            favorites = [];
-        }
-        
-        if (favorites.includes(product.id)) {
-            favoriteBtn.classList.add('active');
-        }
-        
-        // Обработчики для кнопок количества
-        const minusBtn = cartItem.querySelector('.minus');
-        const plusBtn = cartItem.querySelector('.plus');
-        
-        if (minusBtn) {
-            minusBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const productId = parseInt(this.dataset.id);
-                const product = storageCart.find(item => item.id === productId);
-                if (product && product.quantity > 1) {
-                    product.quantity--;
-                    renderCartItems();
-                    triggerVibration();
-                }
-            });
-        }
-        
-        if (plusBtn) {
-            plusBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const productId = parseInt(this.dataset.id);
-                const product = storageCart.find(item => item.id === productId);
-                if (product) {
-                    product.quantity++;
-                    renderCartItems();
-                    triggerVibration();
-                }
-            });
-        }
-        
-        // Обработчик для кнопки избранного
-        if (favoriteBtn) {
-            favoriteBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                this.classList.toggle('active');
-                
-                let favorites = [];
-                try {
-                    favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-                } catch (e) {
-                    console.error("Ошибка загрузки избранного:", e);
-                    favorites = [];
-                }
-                
-                const productId = parseInt(this.dataset.id);
-                
-                if (favorites.includes(productId)) {
-                    favorites = favorites.filter(id => id !== productId);
-                    showToast('Удалено из избранного');
-                } else {
-                    favorites.push(productId);
-                    showToast('Добавлено в избранное');
-                }
-                
-                try {
-                    localStorage.setItem('favorites', JSON.stringify(favorites));
-                } catch (e) {
-                    console.error("Ошибка сохранения избранного:", e);
-                }
-                triggerVibration();
-            });
-        }
-    });
-    
-    updateTotal();
+function filterStorageItems() {
+  const searchTerm = document.getElementById('storage-search').value.toLowerCase();
+  const filteredItems = storageItems.filter(item => 
+    item.name.toLowerCase().includes(searchTerm) ||
+    item.category.toLowerCase().includes(searchTerm)
+  );
+  
+  renderFilteredStorageItems(filteredItems);
 }
 
-// Рендер истории заказов
-function renderOrderHistory() {
-    console.log("renderOrderHistory called");
-    const orderHistoryContainer = document.querySelector('.order-history');
-    if (!orderHistoryContainer) return;
-    
-    orderHistoryContainer.innerHTML = '';
-    
-    if (storageOrders.length === 0) {
-        orderHistoryContainer.innerHTML = `
-            <div class="empty-orders">
-                <i class="fas fa-box-open" style="font-size: 50px; margin-bottom: 20px;"></i>
-                <h3>Нет истории заказов</h3>
-                <p>Ваши заказы появятся здесь</p>
-            </div>
-        `;
-        return;
+function sortStorageItems() {
+  const sortBy = document.getElementById('storage-sort').value;
+  let sortedItems = [...storageItems];
+  
+  switch(sortBy) {
+    case 'name':
+      sortedItems.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case 'price-high':
+      sortedItems.sort((a, b) => b.price - a.price);
+      break;
+    case 'price-low':
+      sortedItems.sort((a, b) => a.price - b.price);
+      break;
+    case 'quantity':
+      sortedItems.sort((a, b) => b.quantity - a.quantity);
+      break;
+    default:
+      // По умолчанию - по новизне
+      sortedItems.sort((a, b) => b.isNew - a.isNew);
+  }
+  
+  renderFilteredStorageItems(sortedItems);
+}
+
+function renderFilteredStorageItems(items) {
+  const storageGrid = document.getElementById('storage-grid');
+  if (!storageGrid) return;
+  
+  storageGrid.innerHTML = '';
+  
+  items.forEach((item, index) => {
+    const originalIndex = storageItems.findIndex(storageItem => storageItem.id === item.id);
+    const itemElement = document.createElement('div');
+    itemElement.className = 'storage-item';
+    itemElement.innerHTML = `
+      <div class="storage-item-image">
+        <i class="fas fa-${item.image}"></i>
+        ${item.isNew ? '<span class="new-badge">NEW</span>' : ''}
+      </div>
+      <div class="storage-item-info">
+        <h4>${item.name}</h4>
+        <p class="storage-item-category">${item.category}</p>
+        <p class="storage-item-price">${item.price.toLocaleString('ru-RU')} ₽</p>
+        <div class="storage-item-meta">
+          <span>На складе: ${item.inStock}</span>
+          <span>У вас: ${item.quantity}</span>
+        </div>
+      </div>
+      <div class="storage-item-actions">
+        <button onclick="sellItem(${originalIndex})" class="btn-sell" ${item.quantity === 0 ? 'disabled' : ''}>
+          <i class="fas fa-coins"></i>
+          Продать
+        </button>
+        <button onclick="useItem(${originalIndex})" class="btn-use" ${item.quantity === 0 ? 'disabled' : ''}>
+          <i class="fas fa-use"></i>
+          Использовать
+        </button>
+      </div>
+    `;
+    storageGrid.appendChild(itemElement);
+  });
+}
+
+function sellItem(index) {
+  if (index < 0 || index >= storageItems.length) return;
+  
+  const item = storageItems[index];
+  if (item.quantity === 0) return;
+  
+  // Увеличиваем баланс
+  const currentBalance = parseInt(localStorage.getItem('userBalance') || '0');
+  const salePrice = Math.floor(item.price * 0.8); // 80% от цены
+  const newBalance = currentBalance + salePrice;
+  
+  localStorage.setItem('userBalance', newBalance.toString());
+  document.getElementById('balance').textContent = newBalance;
+  
+  // Уменьшаем количество
+  item.quantity--;
+  
+  // Сохраняем изменения
+  localStorage.setItem('storageItems', JSON.stringify(storageItems));
+  
+  // Обновляем отображение
+  updateStorageDisplay();
+  
+  showToast(`Продано: ${item.name} за ${salePrice.toLocaleString('ru-RU')} ₽`);
+  triggerVibration();
+}
+
+function useItem(index) {
+  if (index < 0 || index >= storageItems.length) return;
+  
+  const item = storageItems[index];
+  if (item.quantity === 0) return;
+  
+  // Уменьшаем количество
+  item.quantity--;
+  
+  // Сохраняем изменения
+  localStorage.setItem('storageItems', JSON.stringify(storageItems));
+  
+  // Обновляем отображение
+  updateStorageDisplay();
+  
+  showToast(`Использовано: ${item.name}`);
+  triggerVibration();
+  
+  // Здесь можно добавить логику применения эффектов предмета
+  applyItemEffects(item);
+}
+
+function applyItemEffects(item) {
+  // Пример эффектов предметов
+  switch(item.category) {
+    case 'Часы':
+      showToast('+10% к продуктивности на 1 час');
+      break;
+    case 'Наушники':
+      showToast('+15% к концентрации на 30 минут');
+      break;
+    case 'Украшения':
+      showToast('+20 к настроению');
+      break;
+    default:
+      showToast('Предмет использован');
+  }
+}
+
+function addSampleItems() {
+  // Добавляем демо-товары
+  const sampleItems = [
+    {
+      id: Date.now() + 1,
+      name: "Умные часы",
+      category: "Часы",
+      price: 12000,
+      quantity: 2,
+      image: "clock",
+      inStock: 4,
+      isNew: true
+    },
+    {
+      id: Date.now() + 2,
+      name: "Игровые наушники",
+      category: "Наушники",
+      price: 9500,
+      quantity: 1,
+      image: "headphones",
+      inStock: 6,
+      isNew: false
+    },
+    {
+      id: Date.now() + 3,
+      name: "Золотая цепь",
+      category: "Украшения",
+      price: 18000,
+      quantity: 1,
+      image: "gem",
+      inStock: 2,
+      isNew: true
     }
-    
-    storageOrders.forEach(order => {
-        const orderElement = document.createElement('div');
-        orderElement.className = 'history-item';
-        
-        orderElement.innerHTML = `
-            <div class="history-image">
-                <i class="fas fa-box" style="font-size: 24px; color: #888;"></i>
-            </div>
-            <div class="history-details">
-                <div class="order-date">Заказ от ${order.date}</div>
-                <h3>${order.items.join(', ')}</h3>
-                <div class="order-total">${order.total.toLocaleString('ru-RU')} ₽</div>
-                <div class="order-status ${order.status === 'delivered' ? 'status-delivered' : 'status-processing'}">
-                    ${order.status === 'delivered' ? 'Доставлен' : 'Обрабатывается'}
-                </div>
-            </div>
-        `;
-        
-        orderHistoryContainer.appendChild(orderElement);
-    });
+  ];
+  
+  storageItems = [...storageItems, ...sampleItems];
+  localStorage.setItem('storageItems', JSON.stringify(storageItems));
+  
+  updateStorageDisplay();
+  showToast('Демо-товары добавлены на склад');
 }
 
-// Рендер предложений
-function renderSuggestions() {
-    console.log("renderSuggestions called");
-    const suggestionsContainer = document.querySelector('.suggestions-container');
-    if (!suggestionsContainer) return;
-    
-    suggestionsContainer.innerHTML = '';
-    
-    const suggestions = [
-        { id: 6, name: "Кабель Lightning", price: 1990, image: "bolt", category: "Аксессуары", inStock: 15 },
-        { id: 7, name: "Адаптер питания", price: 2990, image: "plug", category: "Аксессуары", inStock: 8 },
-        { id: 8, name: "Подставка для MacBook", price: 5990, image: "laptop", category: "Аксессуары", inStock: 3 },
-        { id: 9, name: "Стекло для защиты", price: 1490, image: "mobile", category: "Аксессуары", inStock: 20 },
-        { id: 10, name: "Беспроводная зарядка", price: 3990, image: "battery-full", category: "Электроника", inStock: 6 }
-    ];
-    
-    suggestions.forEach(suggestion => {
-        const suggestionElement = document.createElement('div');
-        suggestionElement.className = 'suggestion-item';
-        
-        suggestionElement.innerHTML = `
-            <div class="suggestion-image">
-                <i class="fas fa-${suggestion.image}" style="font-size: 24px; color: #888;"></i>
-            </div>
-            <div class="suggestion-name">${suggestion.name}</div>
-            <div class="suggestion-price">${suggestion.price.toLocaleString('ru-RU')} ₽</div>
-            <button class="add-suggestion" data-id="${suggestion.id}">Добавить</button>
-        `;
-        
-        suggestionsContainer.appendChild(suggestionElement);
-        
-        // Обработчик для кнопки добавления
-        const addBtn = suggestionElement.querySelector('.add-suggestion');
-        if (addBtn) {
-            addBtn.addEventListener('click', function() {
-                const productId = parseInt(this.dataset.id);
-                const product = suggestions.find(p => p.id === productId);
-                
-                if (product) {
-                    // Проверка, есть ли товар уже в корзине
-                    const existingItem = storageCart.find(item => item.id === productId);
-                    if (!existingItem) {
-                        storageCart.push({...product, quantity: 1});
-                        showToast('Товар добавлен в корзину');
-                        renderCartItems();
-                    } else {
-                        showToast('Товар уже в корзине');
-                    }
-                }
-            });
-        }
-    });
+// ===== ФУНКЦИИ ДЛЯ КОРЗИНЫ =====
+function openCart() {
+  showCartModal();
 }
 
-// Обновление общей суммы
-function updateTotal() {
-    console.log("updateTotal called");
-    const subtotal = storageCart.reduce((sum, product) => sum + (product.price * product.quantity), 0);
-    const discountAmount = storagePromoApplied ? Math.round(subtotal * storageDiscount) : 0;
-    const total = subtotal - discountAmount + storageDeliveryCost;
+function showCartModal() {
+  const modal = document.getElementById('cart-modal');
+  if (!modal) return;
+  
+  updateCartModal();
+  modal.classList.add('show');
+  
+  // Блокируем прокрутку фона
+  document.body.style.overflow = 'hidden';
+}
+
+function hideCartModal() {
+  const modal = document.getElementById('cart-modal');
+  if (!modal) return;
+  
+  modal.classList.remove('show');
+  
+  // Восстанавливаем прокрутку
+  document.body.style.overflow = '';
+}
+
+function updateCartModal() {
+  const cartItemsContainer = document.getElementById('cart-items');
+  const cartTotal = document.getElementById('cart-total');
+  const emptyCart = document.getElementById('empty-cart');
+  const cartContent = document.getElementById('cart-content');
+  
+  if (!cartItemsContainer || !cartTotal) return;
+  
+  if (cartItems.length === 0) {
+    emptyCart.style.display = 'block';
+    cartContent.style.display = 'none';
+    return;
+  }
+  
+  emptyCart.style.display = 'none';
+  cartContent.style.display = 'block';
+  
+  // Очищаем контейнер
+  cartItemsContainer.innerHTML = '';
+  
+  // Добавляем товары
+  let total = 0;
+  
+  cartItems.forEach((item, index) => {
+    const itemElement = document.createElement('div');
+    itemElement.className = 'cart-item';
+    itemElement.innerHTML = `
+      <div class="cart-item-image">
+        <i class="fas fa-${item.image}"></i>
+      </div>
+      <div class="cart-item-info">
+        <h4>${item.name}</h4>
+        <p class="cart-item-category">${item.category}</p>
+        <p class="cart-item-price">${item.price.toLocaleString('ru-RU')} ₽ × ${item.quantity}</p>
+      </div>
+      <div class="cart-item-controls">
+        <button onclick="changeCartItemQuantity(${index}, -1)" class="quantity-btn">
+          <i class="fas fa-minus"></i>
+        </button>
+        <span class="quantity">${item.quantity}</span>
+        <button onclick="changeCartItemQuantity(${index}, 1)" class="quantity-btn">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button onclick="removeFromCart(${index})" class="remove-btn">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+    cartItemsContainer.appendChild(itemElement);
     
-    // Обновляем элементы на странице
-    const subtotalEl = document.querySelector('.subtotal-value');
-    const discountEl = document.querySelector('.discount-value');
-    const deliveryEl = document.querySelector('.delivery-value');
-    const totalEl = document.querySelector('.total-value');
-    const itemsCountEl = document.querySelector('.items-count');
+    total += item.price * item.quantity;
+  });
+  
+  cartTotal.textContent = `${total.toLocaleString('ru-RU')} ₽`;
+}
+
+function changeCartItemQuantity(index, change) {
+  if (index < 0 || index >= cartItems.length) return;
+  
+  const item = cartItems[index];
+  const newQuantity = item.quantity + change;
+  
+  if (newQuantity <= 0) {
+    removeFromCart(index);
+    return;
+  }
+  
+  if (newQuantity > item.inStock) {
+    showToast(`Нельзя добавить больше ${item.inStock} шт.`);
+    return;
+  }
+  
+  item.quantity = newQuantity;
+  localStorage.setItem('cartItems', JSON.stringify(cartItems));
+  
+  updateCartModal();
+  updateCartCounter();
+  triggerVibration();
+}
+
+function removeFromCart(index) {
+  if (index < 0 || index >= cartItems.length) return;
+  
+  const itemName = cartItems[index].name;
+  cartItems.splice(index, 1);
+  localStorage.setItem('cartItems', JSON.stringify(cartItems));
+  
+  updateCartModal();
+  updateCartCounter();
+  showToast(`"${itemName}" удален из корзины`);
+  triggerVibration();
+}
+
+function checkout() {
+  if (cartItems.length === 0) {
+    showToast('Корзина пуста');
+    return;
+  }
+  
+  const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const currentBalance = parseInt(localStorage.getItem('userBalance') || '0');
+  
+  if (currentBalance < total) {
+    showToast('Недостаточно средств');
+    return;
+  }
+  
+  // Списание средств
+  const newBalance = currentBalance - total;
+  localStorage.setItem('userBalance', newBalance.toString());
+  document.getElementById('balance').textContent = newBalance;
+  
+  // Добавление товаров на склад
+  addPurchasedItemsToStorage();
+  
+  // Очистка корзины
+  cartItems = [];
+  localStorage.setItem('cartItems', JSON.stringify(cartItems));
+  
+  // Обновление интерфейса
+  updateCartCounter();
+  hideCartModal();
+  
+  showToast(`Покупка совершена! Списано ${total.toLocaleString('ru-RU')} ₽`);
+  triggerVibration();
+}
+
+function addPurchasedItemsToStorage() {
+  let storageItems = JSON.parse(localStorage.getItem('storageItems') || '[]');
+  
+  cartItems.forEach(cartItem => {
+    const existingItemIndex = storageItems.findIndex(item => item.id === cartItem.id);
     
-    if (subtotalEl) subtotalEl.textContent = `${subtotal.toLocaleString('ru-RU')} ₽`;
-    if (discountEl) discountEl.textContent = `-${discountAmount.toLocaleString('ru-RU')} ₽`;
-    if (deliveryEl) deliveryEl.textContent = storageDeliveryCost === 0 ? 'Бесплатно' : `${storageDeliveryCost.toLocaleString('ru-RU')} ₽`;
-    if (totalEl) totalEl.textContent = `${total.toLocaleString('ru-RU')} ₽`;
-    if (itemsCountEl) itemsCountEl.textContent = storageCart.reduce((sum, product) => sum + product.quantity, 0);
-    
-    // Сохранение в localStorage
-    try {
-        localStorage.setItem('storageCart', JSON.stringify(storageCart));
-    } catch (e) {
-        console.error("Ошибка сохранения корзины:", e);
+    if (existingItemIndex !== -1) {
+      // Увеличиваем количество существующего товара
+      storageItems[existingItemIndex].quantity += cartItem.quantity;
+    } else {
+      // Добавляем новый товар
+      storageItems.push({
+        id: cartItem.id,
+        name: cartItem.name,
+        category: cartItem.category,
+        price: cartItem.price,
+        quantity: cartItem.quantity,
+        image: cartItem.image,
+        inStock: Math.floor(Math.random() * 10) + 1,
+        isNew: true
+      });
     }
+  });
+  
+  localStorage.setItem('storageItems', JSON.stringify(storageItems));
 }
 
-// Применение промокода
-function applyPromoCode() {
-    console.log("applyPromoCode called");
-    const promoInput = document.querySelector('.promo-input');
-    if (!promoInput) return;
-    
-    const promoCode = promoInput.value.trim();
-    
-    if (promoCode === 'SUMMER20') {
-        storageDiscount = 0.2;
-        storagePromoApplied = true;
-        showToast('Промокод применен! Скидка 20%');
-        updateTotal();
-    } else if (promoCode === 'WELCOME10') {
-        storageDiscount = 0.1;
-        storagePromoApplied = true;
-        showToast('Промокод применен! Скидка 10%');
-        updateTotal();
-    } else if (promoCode) {
-        showToast('Неверный промокод');
-    }
-}
-
-// Настройка свайпа для элементов корзины
-function setupSwipe(element, productId) {
-    let startX, moveX, currentX = 0;
-    let isSwiping = false;
-    
-    element.addEventListener('touchstart', function(e) {
-        startX = e.touches[0].clientX;
-        isSwiping = true;
-    });
-    
-    element.addEventListener('touchmove', function(e) {
-        if (!isSwiping) return;
-        
-        moveX = e.touches[0].clientX;
-        const diffX = moveX - startX;
-        
-        // Ограничение расстояния свайпа
-        if (Math.abs(diffX) > 100) return;
-        
-        currentX = diffX;
-        this.style.transform = `translateX(${currentX}px)`;
-        
-        // Показ фона действий свайпа
-        const leftAction = this.querySelector('.swipe-left-action');
-        const rightAction = this.querySelector('.swipe-right-action');
-        
-        if (currentX < -30) {
-            if (leftAction) leftAction.style.opacity = '1';
-            if (rightAction) rightAction.style.opacity = '0';
-        } else if (currentX > 30) {
-            if (leftAction) leftAction.style.opacity = '0';
-            if (rightAction) rightAction.style.opacity = '1';
-        } else {
-            if (leftAction) leftAction.style.opacity = '0';
-            if (rightAction) rightAction.style.opacity = '0';
-        }
-    });
-    
-    element.addEventListener('touchend', function() {
-        isSwiping = false;
-        
-        if (currentX < -60) {
-            // Свайп влево - удалить элемент
-            this.classList.add('slide-out');
-            setTimeout(() => {
-                storageCart = storageCart.filter(item => item.id !== productId);
-                renderCartItems();
-                showToast('Товар удален из корзины');
-            }, 300);
-        } else if (currentX > 60) {
-            // Свайп вправо - купить сейчас
-            const product = storageCart.find(item => item.id === productId);
-            if (product) {
-                showToast(`Покупка: ${product.name}`);
-                // Здесь можно добавить логику быстрой покупки
-            }
-        }
-        
-        // Возврат элемента в исходное положение
-        this.style.transform = 'translateX(0)';
-        currentX = 0;
-        
-        // Скрыть фоны действий
-        const leftAction = this.querySelector('.swipe-left-action');
-        const rightAction = this.querySelector('.swipe-right-action');
-        if (leftAction) leftAction.style.opacity = '0';
-        if (rightAction) rightAction.style.opacity = '0';
-    });
-}
-
-// Показать уведомление
+// ===== УТИЛИТЫ =====
 function showToast(message) {
-    // Создаем или находим элемент тоста
-    let toast = document.querySelector('.toast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.className = 'toast';
-        document.body.appendChild(toast);
+  // Создаем или находим контейнер для уведомлений
+  let toastContainer = document.getElementById('toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'toast-container';
+    toastContainer.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    `;
+    document.body.appendChild(toastContainer);
+  }
+  
+  // Создаем уведомление
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  toast.style.cssText = `
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+  `;
+  
+  toastContainer.appendChild(toast);
+  
+  // Удаляем уведомление через 3 секунды
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
     }
-    
-    toast.textContent = message;
-    toast.classList.add('show');
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
+  }, 3000);
 }
 
-// Функция вибрации
-function triggerVibration() {
-    if (navigator.vibrate) {
-        navigator.vibrate(50);
-    }
-}
+// Добавляем стили для анимации уведомлений
+const toastStyles = document.createElement('style');
+toastStyles.textContent = `
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+`;
+document.head.appendChild(toastStyles);
 
-// Обновляем вызов инициализации
+// ===== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ =====
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM загружен, инициализация...");
-    
-    // Инициализация склада только если есть соответствующие элементы
-    const hasStorageElements = document.querySelector('.cart-items') || 
-                              document.querySelector('.storage-tab') || 
-                              document.querySelector('.checkout-page');
-    
-    if (hasStorageElements) {
-        console.log("Обнаружена страница склада, инициализируем...");
-        initStoragePage();
+  initUserData();
+  initSwipeHandlers();
+  initPaymentPage();
+  
+  // Инициализация корзины
+  updateCartCounter();
+  
+  // Обработчики для кнопок корзины
+  const cartBtn = document.querySelector('.cart-btn');
+  if (cartBtn) {
+    cartBtn.addEventListener('click', openCart);
+  }
+  
+  // Закрытие модальных окон по клику на overlay
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-overlay')) {
+      hideCartModal();
+      hideAddCardModal();
     }
-    
-    // Остальная инициализация (если нужна)
-    try {
-        if (typeof initUserData === 'function') initUserData();
-        if (typeof initSwipeHandlers === 'function') initSwipeHandlers();
-        if (typeof initPaymentPage === 'function') initPaymentPage();
-    } catch (e) {
-        console.log("Некоторые функции инициализации не найдены, это нормально");
+  });
+  
+  // Закрытие по ESC
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      hideCartModal();
+      hideAddCardModal();
     }
+  });
 });
+
+// ===== ОБРАБОТЧИКИ СВАЙПОВ =====
+function initSwipeHandlers() {
+  let startX, startY;
+  const mainPage = document.getElementById('main-page');
+  
+  if (mainPage) {
+    mainPage.addEventListener('touchstart', function(e) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    });
+    
+    mainPage.addEventListener('touchend', function(e) {
+      if (!startX || !startY) return;
+      
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      
+      const diffX = endX - startX;
+      const diffY = endY - startY;
+      
+      // Определяем направление свайпа
+      if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+        if (diffX > 0) {
+          // Свайп вправо - открываем каюту
+          showPage(document.getElementById('cabinet-page'));
+          updateActiveNav(document.getElementById('cabinet-nav-item'));
+        } else {
+          // Свайп влево - открываем склад
+          showPage(document.getElementById('storage-page'));
+          updateActiveNav(document.getElementById('storage-nav-item'));
+        }
+      }
+    });
+  }
+}
+
+// ===== ГЛОБАЛЬНЫЙ ЭКСПОРТ ДЛЯ HTML =====
+// Делаем функции доступными глобально для обработчиков в HTML
+window.openCart = openCart;
+window.hideCartModal = hideCartModal;
+window.checkout = checkout;
+window.changeCartItemQuantity = changeCartItemQuantity;
+window.removeFromCart = removeFromCart;
+window.sellItem = sellItem;
+window.useItem = useItem;
+window.addSampleItems = addSampleItems;
+window.showPaymentPage = showPaymentPage;
+window.hidePaymentPage = hidePaymentPage;
+window.showAddCardModal = showAddCardModal;
+window.hideAddCardModal = hideAddCardModal;
+window.showExpensesPage = showExpensesPage;
+window.hideExpensesPage = hideExpensesPage;
+window.showProfilePage = showProfilePage;
+window.hideProfilePage = hideProfilePage;
+window.prevMonth = prevMonth;
+window.nextMonth = nextMonth;
+window.changeLevel = changeLevel;
+window.closeCareerPopup = closeCareerPopup;
+window.handleProfileClick = handleProfileClick;
 </script>
 </body>
 </html>
