@@ -6672,11 +6672,21 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ===== КОД ДЛЯ СТРАНИЦЫ СКЛАДА (НОВАЯ КОРЗИНА) =====
-let cart = [];
-let orders = [];
-let discount = 0;
-let promoApplied = false;
-let deliveryCost = 0;
+// МЕНЯЕМ имена переменных чтобы избежать конфликта
+let storageCart = [];
+let storageOrders = [];
+let storageDiscount = 0;
+let storagePromoApplied = false;
+let storageDeliveryCost = 0;
+
+// Функция для получения корзины по умолчанию
+function getDefaultCart() {
+    return [
+        { id: 1, name: "iPhone 13 Pro", price: 89990, originalPrice: 99990, image: "mobile-alt", quantity: 1, category: "Электроника", inStock: 5, isNew: true },
+        { id: 2, name: "AirPods Pro", price: 19990, image: "headphones", quantity: 2, category: "Аксессуары", inStock: 10 },
+        { id: 3, name: "Apple Watch S7", price: 39990, image: "clock", quantity: 1, category: "Электроника", inStock: 3 }
+    ];
+}
 
 // Инициализация страницы склада
 function initStoragePage() {
@@ -6684,24 +6694,19 @@ function initStoragePage() {
     
     // Загрузка данных из localStorage
     try {
-        const savedCart = localStorage.getItem('cart');
-        const savedOrders = localStorage.getItem('orders');
+        const savedCart = localStorage.getItem('storageCart');
+        const savedOrders = localStorage.getItem('storageOrders');
         
-        cart = savedCart ? JSON.parse(savedCart) : [
-            { id: 1, name: "iPhone 13 Pro", price: 89990, originalPrice: 99990, image: "mobile-alt", quantity: 1, category: "Электроника", inStock: 5, isNew: true },
-            { id: 2, name: "AirPods Pro", price: 19990, image: "headphones", quantity: 2, category: "Аксессуары", inStock: 10 },
-            { id: 3, name: "Apple Watch S7", price: 39990, image: "clock", quantity: 1, category: "Электроника", inStock: 3 }
-        ];
-        
-        orders = savedOrders ? JSON.parse(savedOrders) : [
+        storageCart = savedCart ? JSON.parse(savedCart) : getDefaultCart();
+        storageOrders = savedOrders ? JSON.parse(savedOrders) : [
             { id: 1001, date: "12.08.2023", items: ["iPhone 13 Pro", "Чехол для iPhone"], total: 92980, status: "delivered" },
             { id: 1002, date: "05.08.2023", items: ["AirPods Pro"], total: 19990, status: "delivered" },
             { id: 1003, date: "28.07.2023", items: ["MacBook Pro 14", "Apple Watch S7"], total: 239980, status: "processing" }
         ];
     } catch (e) {
         console.error("Ошибка загрузки данных:", e);
-        cart = [];
-        orders = [];
+        storageCart = getDefaultCart();
+        storageOrders = [];
     }
 
     // Настройка обработчиков событий
@@ -6728,12 +6733,15 @@ function setupStorageEventListeners() {
             this.classList.add('active');
             
             const tabType = this.getAttribute('data-tab');
-            if (tabType === 'cart') {
-                document.querySelector('.cart-content').classList.remove('hidden');
-                document.querySelector('.ordered-content').classList.add('hidden');
-            } else {
-                document.querySelector('.cart-content').classList.add('hidden');
-                document.querySelector('.ordered-content').classList.remove('hidden');
+            const cartContent = document.querySelector('.cart-content');
+            const orderedContent = document.querySelector('.ordered-content');
+            
+            if (tabType === 'cart' && cartContent && orderedContent) {
+                cartContent.classList.remove('hidden');
+                orderedContent.classList.add('hidden');
+            } else if (cartContent && orderedContent) {
+                cartContent.classList.add('hidden');
+                orderedContent.classList.remove('hidden');
                 renderOrderHistory();
             }
         });
@@ -6743,7 +6751,8 @@ function setupStorageEventListeners() {
     const checkoutBtn = document.querySelector('.checkout-btn');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', function() {
-            document.querySelector('.checkout-page').classList.add('visible');
+            const checkoutPage = document.querySelector('.checkout-page');
+            if (checkoutPage) checkoutPage.classList.add('visible');
         });
     }
 
@@ -6751,7 +6760,8 @@ function setupStorageEventListeners() {
     const backBtn = document.querySelector('.back-checkout-btn');
     if (backBtn) {
         backBtn.addEventListener('click', function() {
-            document.querySelector('.checkout-page').classList.remove('visible');
+            const checkoutPage = document.querySelector('.checkout-page');
+            if (checkoutPage) checkoutPage.classList.remove('visible');
         });
     }
 
@@ -6798,20 +6808,24 @@ function setupStorageEventListeners() {
             const select = this.querySelector('.option-select');
             if (select) select.classList.add('selected');
             
-            const priceText = this.querySelector('.option-price').textContent;
-            if (priceText === '490 ₽') {
-                deliveryCost = 490;
-            } else {
-                deliveryCost = 0;
+            const priceElement = this.querySelector('.option-price');
+            if (priceElement) {
+                const priceText = priceElement.textContent;
+                if (priceText === '490 ₽') {
+                    storageDeliveryCost = 490;
+                } else {
+                    storageDeliveryCost = 0;
+                }
+                
+                updateTotal();
             }
-            
-            updateTotal();
         });
     });
 }
 
 // Рендер товаров в корзине
 function renderCartItems() {
+    console.log("renderCartItems called");
     const cartItemsContainer = document.querySelector('.cart-items');
     if (!cartItemsContainer) {
         console.error("Контейнер корзины не найден");
@@ -6820,7 +6834,7 @@ function renderCartItems() {
     
     cartItemsContainer.innerHTML = '';
     
-    if (cart.length === 0) {
+    if (storageCart.length === 0) {
         cartItemsContainer.innerHTML = `
             <div class="empty-cart">
                 <i class="fas fa-shopping-cart" style="font-size: 50px; margin-bottom: 20px;"></i>
@@ -6840,8 +6854,8 @@ function renderCartItems() {
     const searchInput = document.querySelector('.search-input');
     const searchText = searchInput ? searchInput.value.toLowerCase() : '';
     const filteredCart = searchText ? 
-        cart.filter(item => item.name.toLowerCase().includes(searchText)) : 
-        cart;
+        storageCart.filter(item => item.name.toLowerCase().includes(searchText)) : 
+        storageCart;
     
     if (filteredCart.length === 0) {
         cartItemsContainer.innerHTML = `
@@ -6914,7 +6928,14 @@ function renderCartItems() {
         
         // Установка статуса избранного
         const favoriteBtn = cartItem.querySelector('.favorite-btn');
-        const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+        let favorites = [];
+        try {
+            favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+        } catch (e) {
+            console.error("Ошибка загрузки избранного:", e);
+            favorites = [];
+        }
+        
         if (favorites.includes(product.id)) {
             favoriteBtn.classList.add('active');
         }
@@ -6923,46 +6944,64 @@ function renderCartItems() {
         const minusBtn = cartItem.querySelector('.minus');
         const plusBtn = cartItem.querySelector('.plus');
         
-        minusBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const productId = parseInt(this.dataset.id);
-            const product = cart.find(item => item.id === productId);
-            if (product && product.quantity > 1) {
-                product.quantity--;
-                renderCartItems();
-                triggerVibration();
-            }
-        });
+        if (minusBtn) {
+            minusBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const productId = parseInt(this.dataset.id);
+                const product = storageCart.find(item => item.id === productId);
+                if (product && product.quantity > 1) {
+                    product.quantity--;
+                    renderCartItems();
+                    triggerVibration();
+                }
+            });
+        }
         
-        plusBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const productId = parseInt(this.dataset.id);
-            const product = cart.find(item => item.id === productId);
-            if (product) {
-                product.quantity++;
-                renderCartItems();
-                triggerVibration();
-            }
-        });
+        if (plusBtn) {
+            plusBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const productId = parseInt(this.dataset.id);
+                const product = storageCart.find(item => item.id === productId);
+                if (product) {
+                    product.quantity++;
+                    renderCartItems();
+                    triggerVibration();
+                }
+            });
+        }
         
         // Обработчик для кнопки избранного
-        favoriteBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            this.classList.toggle('active');
-            
-            let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-            const productId = parseInt(this.dataset.id);
-            
-            if (favorites.includes(productId)) {
-                favorites = favorites.filter(id => id !== productId);
-                showToast('Удалено из избранного');
-            } else {
-                favorites.push(productId);
-                showToast('Добавлено в избранное');
-            }
-            localStorage.setItem('favorites', JSON.stringify(favorites));
-            triggerVibration();
-        });
+        if (favoriteBtn) {
+            favoriteBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.classList.toggle('active');
+                
+                let favorites = [];
+                try {
+                    favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+                } catch (e) {
+                    console.error("Ошибка загрузки избранного:", e);
+                    favorites = [];
+                }
+                
+                const productId = parseInt(this.dataset.id);
+                
+                if (favorites.includes(productId)) {
+                    favorites = favorites.filter(id => id !== productId);
+                    showToast('Удалено из избранного');
+                } else {
+                    favorites.push(productId);
+                    showToast('Добавлено в избранное');
+                }
+                
+                try {
+                    localStorage.setItem('favorites', JSON.stringify(favorites));
+                } catch (e) {
+                    console.error("Ошибка сохранения избранного:", e);
+                }
+                triggerVibration();
+            });
+        }
     });
     
     updateTotal();
@@ -6970,12 +7009,13 @@ function renderCartItems() {
 
 // Рендер истории заказов
 function renderOrderHistory() {
+    console.log("renderOrderHistory called");
     const orderHistoryContainer = document.querySelector('.order-history');
     if (!orderHistoryContainer) return;
     
     orderHistoryContainer.innerHTML = '';
     
-    if (orders.length === 0) {
+    if (storageOrders.length === 0) {
         orderHistoryContainer.innerHTML = `
             <div class="empty-orders">
                 <i class="fas fa-box-open" style="font-size: 50px; margin-bottom: 20px;"></i>
@@ -6986,7 +7026,7 @@ function renderOrderHistory() {
         return;
     }
     
-    orders.forEach(order => {
+    storageOrders.forEach(order => {
         const orderElement = document.createElement('div');
         orderElement.className = 'history-item';
         
@@ -7010,6 +7050,7 @@ function renderOrderHistory() {
 
 // Рендер предложений
 function renderSuggestions() {
+    console.log("renderSuggestions called");
     const suggestionsContainer = document.querySelector('.suggestions-container');
     if (!suggestionsContainer) return;
     
@@ -7040,30 +7081,33 @@ function renderSuggestions() {
         
         // Обработчик для кнопки добавления
         const addBtn = suggestionElement.querySelector('.add-suggestion');
-        addBtn.addEventListener('click', function() {
-            const productId = parseInt(this.dataset.id);
-            const product = suggestions.find(p => p.id === productId);
-            
-            if (product) {
-                // Проверка, есть ли товар уже в корзине
-                const existingItem = cart.find(item => item.id === productId);
-                if (!existingItem) {
-                    cart.push({...product, quantity: 1});
-                    showToast('Товар добавлен в корзину');
-                    renderCartItems();
-                } else {
-                    showToast('Товар уже в корзине');
+        if (addBtn) {
+            addBtn.addEventListener('click', function() {
+                const productId = parseInt(this.dataset.id);
+                const product = suggestions.find(p => p.id === productId);
+                
+                if (product) {
+                    // Проверка, есть ли товар уже в корзине
+                    const existingItem = storageCart.find(item => item.id === productId);
+                    if (!existingItem) {
+                        storageCart.push({...product, quantity: 1});
+                        showToast('Товар добавлен в корзину');
+                        renderCartItems();
+                    } else {
+                        showToast('Товар уже в корзине');
+                    }
                 }
-            }
-        });
+            });
+        }
     });
 }
 
 // Обновление общей суммы
 function updateTotal() {
-    const subtotal = cart.reduce((sum, product) => sum + (product.price * product.quantity), 0);
-    const discountAmount = promoApplied ? Math.round(subtotal * discount) : 0;
-    const total = subtotal - discountAmount + deliveryCost;
+    console.log("updateTotal called");
+    const subtotal = storageCart.reduce((sum, product) => sum + (product.price * product.quantity), 0);
+    const discountAmount = storagePromoApplied ? Math.round(subtotal * storageDiscount) : 0;
+    const total = subtotal - discountAmount + storageDeliveryCost;
     
     // Обновляем элементы на странице
     const subtotalEl = document.querySelector('.subtotal-value');
@@ -7074,29 +7118,34 @@ function updateTotal() {
     
     if (subtotalEl) subtotalEl.textContent = `${subtotal.toLocaleString('ru-RU')} ₽`;
     if (discountEl) discountEl.textContent = `-${discountAmount.toLocaleString('ru-RU')} ₽`;
-    if (deliveryEl) deliveryEl.textContent = deliveryCost === 0 ? 'Бесплатно' : `${deliveryCost.toLocaleString('ru-RU')} ₽`;
+    if (deliveryEl) deliveryEl.textContent = storageDeliveryCost === 0 ? 'Бесплатно' : `${storageDeliveryCost.toLocaleString('ru-RU')} ₽`;
     if (totalEl) totalEl.textContent = `${total.toLocaleString('ru-RU')} ₽`;
-    if (itemsCountEl) itemsCountEl.textContent = cart.reduce((sum, product) => sum + product.quantity, 0);
+    if (itemsCountEl) itemsCountEl.textContent = storageCart.reduce((sum, product) => sum + product.quantity, 0);
     
     // Сохранение в localStorage
-    localStorage.setItem('cart', JSON.stringify(cart));
+    try {
+        localStorage.setItem('storageCart', JSON.stringify(storageCart));
+    } catch (e) {
+        console.error("Ошибка сохранения корзины:", e);
+    }
 }
 
 // Применение промокода
 function applyPromoCode() {
+    console.log("applyPromoCode called");
     const promoInput = document.querySelector('.promo-input');
     if (!promoInput) return;
     
     const promoCode = promoInput.value.trim();
     
     if (promoCode === 'SUMMER20') {
-        discount = 0.2;
-        promoApplied = true;
+        storageDiscount = 0.2;
+        storagePromoApplied = true;
         showToast('Промокод применен! Скидка 20%');
         updateTotal();
     } else if (promoCode === 'WELCOME10') {
-        discount = 0.1;
-        promoApplied = true;
+        storageDiscount = 0.1;
+        storagePromoApplied = true;
         showToast('Промокод применен! Скидка 10%');
         updateTotal();
     } else if (promoCode) {
@@ -7149,13 +7198,13 @@ function setupSwipe(element, productId) {
             // Свайп влево - удалить элемент
             this.classList.add('slide-out');
             setTimeout(() => {
-                cart = cart.filter(item => item.id !== productId);
+                storageCart = storageCart.filter(item => item.id !== productId);
                 renderCartItems();
                 showToast('Товар удален из корзины');
             }, 300);
         } else if (currentX > 60) {
             // Свайп вправо - купить сейчас
-            const product = cart.find(item => item.id === productId);
+            const product = storageCart.find(item => item.id === productId);
             if (product) {
                 showToast(`Покупка: ${product.name}`);
                 // Здесь можно добавить логику быстрой покупки
@@ -7201,13 +7250,25 @@ function triggerVibration() {
 
 // Обновляем вызов инициализации
 document.addEventListener('DOMContentLoaded', function() {
-    initUserData();
-    initSwipeHandlers();
-    initPaymentPage();
+    console.log("DOM загружен, инициализация...");
     
-    // Инициализация склада при загрузке
-    if (document.getElementById('storage-page')) {
+    // Инициализация склада только если есть соответствующие элементы
+    const hasStorageElements = document.querySelector('.cart-items') || 
+                              document.querySelector('.storage-tab') || 
+                              document.querySelector('.checkout-page');
+    
+    if (hasStorageElements) {
+        console.log("Обнаружена страница склада, инициализируем...");
         initStoragePage();
+    }
+    
+    // Остальная инициализация (если нужна)
+    try {
+        if (typeof initUserData === 'function') initUserData();
+        if (typeof initSwipeHandlers === 'function') initSwipeHandlers();
+        if (typeof initPaymentPage === 'function') initPaymentPage();
+    } catch (e) {
+        console.log("Некоторые функции инициализации не найдены, это нормально");
     }
 });
 </script>
