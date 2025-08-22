@@ -5647,450 +5647,497 @@ function hidePaymentModal() {
   document.getElementById('payment-modal').classList.remove('show');
 }
 
-// ===== ПЕРЕМЕННЫЕ СТРАНИЦЫ ТОВАРОВ =====
-let productsPageInitialized = false;
-let cartItems = [];
-let favorites = [];
+// ===== ПЕРЕМЕННЫЕ СТРАНИЦЫ ТОВАРОВ ===== 
+// УБИРАЕМ повторные объявления - эти переменные уже объявлены выше!
+// let productsPageInitialized = false; // УДАЛИТЬ
+// let cartItems = []; // УДАЛИТЬ
+// let favorites = []; // УДАЛИТЬ
 let currentProduct = null;
 let currentImageIndex = 0;
-let activeCategory = 'all';
-let activeTab = 'products';
+// let activeCategory = 'all'; // УДАЛИТЬ
+// let activeTab = 'products'; // УДАЛИТЬ
 
-// ===== ФУНКЦИИ УПРАВЛЕНИЯ СТРАНИЦЕЙ =====
+// ===== ФУНКЦИИ УПРАВЛЕНИЯ СТРАНИЦЕЙ ===== 
 function showProductsPage() {
-  const allPages = [
-    document.getElementById('main-page'),
-    document.getElementById('cabinet-page'),
-    document.getElementById('treasure-page'),
-    document.getElementById('storage-page'),
-    document.getElementById('payment-page'),
-    document.getElementById('expenses-page'),
-    document.getElementById('profile-page'),
-    document.getElementById('reviews-page')
-  ];
-  
-  allPages.forEach(page => {
-    if (page) page.style.display = 'none';
-  });
-  
-  const productsPage = document.getElementById('products-page');
-  productsPage.style.display = 'block';
-  
-  if (!productsPageInitialized) {
-    initProductsPage();
-    productsPageInitialized = true;
-  } else if (window.loadProducts) {
-    window.loadProducts();
-  }
-  
-  updateActiveNav(null);
-  triggerVibration();
+    const allPages = [
+        document.getElementById('main-page'),
+        document.getElementById('cabinet-page'),
+        document.getElementById('treasure-page'),
+        document.getElementById('storage-page'),
+        document.getElementById('payment-page'),
+        document.getElementById('expenses-page'),
+        document.getElementById('profile-page'),
+        document.getElementById('reviews-page')
+    ];
+
+    allPages.forEach(page => {
+        if (page) page.style.display = 'none';
+    });
+
+    const productsPage = document.getElementById('products-page');
+    if (productsPage) {
+        productsPage.style.display = 'block';
+    }
+
+    // Используем глобальные переменные
+    if (!window.productsPageInitialized) {
+        initProductsPage();
+        window.productsPageInitialized = true;
+    } else if (window.loadProducts) {
+        window.loadProducts();
+    }
+
+    updateActiveNav(null);
+    triggerVibration();
 }
 
 function hideProductsPage() {
-  const productsPage = document.getElementById('products-page');
-  productsPage.style.display = 'none';
-  showPage(document.getElementById('main-page'));
-  triggerVibration();
+    const productsPage = document.getElementById('products-page');
+    if (productsPage) {
+        productsPage.style.display = 'none';
+    }
+    showPage(document.getElementById('main-page'));
+    triggerVibration();
 }
 
-// ===== ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ =====
+// ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===== 
+// ОСТАВЛЯЕМ ТОЛЬКО ОДИН РАЗ объявление этих переменных!
+let currentPage = 'main-page';
+let productsPageInitialized = false;
+let activeCategory = 'all';
+let activeTab = 'products';
+let favorites = [];
+let cartItems = [];
+
+// ===== ДАННЫЕ ТОВАРОВ ===== 
+const products = [
+    { 
+        id: 1, 
+        title: "Часы Premium Black", 
+        images: [
+            "https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
+            "https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
+        ], 
+        description: "Роскошные черные часы с автоматическим механизмом. Сапфировое стекло, водонепроницаемость 50м, кожаный ремешок.", 
+        price: 24990, 
+        category: "watches", 
+        rating: 4.8, 
+        reviews: 24, 
+        keywords: ["часы", "премиум", "черные", "кожаный ремешок"] 
+    },
+    { 
+        id: 2, 
+        title: "Наушники Pro Sound", 
+        images: [
+            "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
+            "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
+        ], 
+        description: "Беспроводные наушники с активным шумоподавлением. 30 часов работы, влагозащита, премиальное звучание.", 
+        price: 18990, 
+        category: "headphones", 
+        rating: 4.5, 
+        reviews: 18, 
+        keywords: ["наушники", "беспроводные", "шумоподавление", "pro"] 
+    },
+    { 
+        id: 3, 
+        title: "Золотое кольцo", 
+        images: [
+            "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
+        ], 
+        description: "Элегантное золотое кольцо с бриллиантом.", 
+        price: 45990, 
+        category: "jewelry", 
+        rating: 4.9, 
+        reviews: 32, 
+        keywords: ["кольцо", "золото", "бриллиант", "украшение"] 
+    }
+];
+
+// ===== ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ =====
 function initProductsPage() {
-  // Данные товаров
-   // ===== ДАННЫЕ ТОВАРОВ =====
-        const products = [
-            { 
-                id: 1, 
-                title: "Часы Premium Black", 
-                images: [
-                    "https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-                    "https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-                ], 
-                description: "Роскошные черные часы с автоматическим механизмом. Сапфировое стекло, водонепроницаемость 50м, кожаный ремешок.", 
-                price: 24990, 
-                category: "watches", 
-                rating: 4.8, 
-                reviews: 24, 
-                keywords: ["часы", "премиум", "черные", "кожаный ремешок"] 
-            },
-            { 
-                id: 2, 
-                title: "Наушники Pro Sound", 
-                images: [
-                    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-                    "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-                ], 
-                description: "Беспроводные наушники с активным шумоподавлением. 30 часов работы, влагозащита, премиальное звучание.", 
-                price: 18990, 
-                category: "headphones", 
-                rating: 4.5, 
-                reviews: 18, 
-                keywords: ["наушники", "беспроводные", "шумоподавление", "pro"] 
-            },
-            { 
-                id: 3, 
-                title: "Смартфон Ultra Vision", 
-                images: [
-                    "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-                    "https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-                ], 
-                description: "Флагманский смартфон с камерой 108 Мп, 8K видео и процессором последнего поколения. 256 ГБ памяти.", 
-                price: 89990, 
-                category: "phones", 
-                rating: 4.9, 
-                reviews: 47, 
-                keywords: ["смартфон", "флагман", "камера", "8k"] 
-            },
-            { 
-                id: 4, 
-                title: "Ноутбук EliteBook", 
-                images: [
-                    "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-                    "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-                ], 
-                description: "Мощный ультрабук для работы и творчества. 16 ГБ ОЗУ, SSD 1 ТБ, процессор Intel Core i7, 14-дюймовый 4K экран.", 
-                price: 129990, 
-                category: "laptops", 
-                rating: 4.7, 
-                reviews: 32, 
-                keywords: ["ноутбук", "ультрабук", "производительность", "4k"] 
-            },
-            { 
-                id: 5, 
-                title: "Фотокамера Pro Shot", 
-                images: [
-                    "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-                    "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-                ], 
-                description: "Профессиональная беззеркальная камера с полнокадровым сенсором. 45 Мп, 8K видео, стабилизация изображения.", 
-                price: 219990, 
-                category: "cameras", 
-                rating: 4.9, 
-                reviews: 29, 
-                keywords: ["камера", "фотоаппарат", "профессиональная", "8k"] 
-            },
-            { 
-                id: 6, 
-                title: "Игровая консоль X-Station", 
-                images: [
-                    "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-                    "https://images.unsplash.com/photo-1607853554439-0069ec0f29b9?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-                ], 
-                description: "Новейшая игровая консоль с поддержкой 8K и 120 FPS. SSD 825 ГБ, обратная совместимость с играми предыдущих поколений.", 
-                price: 49990, 
-                category: "consoles", 
-                rating: 4.8, 
-                reviews: 56, 
-                keywords: ["консоль", "игровая", "8k", "гейминг"] 
-            }
-        ];
+    console.log('🚀 Инициализация страницы товаров...');
+    
+    // Используем уже объявленные глобальные переменные
+    if (typeof activeCategory === 'undefined') activeCategory = 'all';
+    if (typeof activeTab === 'undefined') activeTab = 'products';
+    if (typeof favorites === 'undefined') favorites = [];
+    if (typeof cartItems === 'undefined') cartItems = [];
+    if (typeof productsPageInitialized === 'undefined') productsPageInitialized = false;
+    
+    productsPageInitialized = true;
 
-        // ===== ФУНКЦИИ ДЛЯ СКЕЛЕТОНОВ И ВИБРАЦИИ =====
-        function createSkeletons(count = 6) {
-            const productsFeed = document.querySelector('#products-page .products-feed');
-            if (!productsFeed) return;
+    // ===== DOM ЭЛЕМЕНТЫ =====
+    const productsFeed = document.getElementById('productsFeed');
+    const searchInput = document.getElementById('searchInputProducts');
+    const categoriesToggle = document.getElementById('categoriesToggle');
+    const categoriesDropdown = document.getElementById('categoriesDropdown');
+    const emptyState = document.getElementById('emptyState');
+    const tabProducts = document.getElementById('tabProducts');
+    const tabWishlist = document.getElementById('tabWishlist');
+    const sortSelect = document.getElementById('sortSelect');
+
+    // ===== ПРОВЕРКА ЭЛЕМЕНТОВ =====
+    if (!productsFeed) { console.error('❌ Не найден productsFeed'); return; }
+    if (!categoriesToggle) { console.error('❌ Не найден categoriesToggle'); return; }
+    if (!categoriesDropdown) { console.error('❌ Не найден categoriesDropdown'); return; }
+
+    console.log('✅ Все элементы найдены');
+
+    // ===== ИНИЦИАЛИЗАЦИЯ КНОПКИ КАТЕГОРИЙ =====
+    categoriesToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        console.log('📁 Клик по кнопке категорий');
+        categoriesToggle.classList.toggle('active');
+        categoriesDropdown.classList.toggle('active');
+    });
+
+    // Закрытие dropdown при клике вне его
+    document.addEventListener('click', function(e) {
+        if (categoriesDropdown.classList.contains('active') &&
+            !categoriesToggle.contains(e.target) && 
+            !categoriesDropdown.contains(e.target)) {
+            categoriesToggle.classList.remove('active');
+            categoriesDropdown.classList.remove('active');
+        }
+    });
+
+    // ===== ОБРАБОТЧИК ПОИСКА =====
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(function() {
+            console.log('🔍 Поиск:', searchInput.value);
+            loadProducts(activeCategory, searchInput.value);
+        }, 300));
+    }
+
+    // ===== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК =====
+    if (tabProducts && tabWishlist) {
+        tabProducts.addEventListener('click', function() {
+            tabProducts.classList.add('active');
+            tabWishlist.classList.remove('active');
+            activeTab = 'products';
+            loadProducts(activeCategory, searchInput.value);
+        });
+
+        tabWishlist.addEventListener('click', function() {
+            tabWishlist.classList.add('active');
+            tabProducts.classList.remove('active');
+            activeTab = 'wishlist';
+            loadProducts(activeCategory, searchInput.value);
+        });
+    }
+
+    // ===== СОРТИРОВКА =====
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            loadProducts(activeCategory, searchInput.value);
+        });
+    }
+
+    // ===== ФУНКЦИЯ ЗАГРУЗКИ ТОВАРОВ =====
+    function loadProducts(category = activeCategory, searchQuery = '') {
+        console.log('📦 Загрузка товаров:', category, searchQuery);
+        
+        if (!productsFeed || !emptyState) return;
+        
+        createSkeletons();
+        
+        // Имитация загрузки
+        setTimeout(function() {
+            let filtered = products.filter(function(product) {
+                // Проверка категории
+                const matchesCategory = category === 'all' || product.category === category;
+                
+                // Проверка поискового запроса
+                if (searchQuery.trim() === '') return matchesCategory;
+                
+                const query = searchQuery.toLowerCase().trim();
+                const searchText = [
+                    product.title.toLowerCase(),
+                    product.description.toLowerCase(),
+                    ...(product.keywords || [])
+                ].join(' ');
+                
+                return matchesCategory && searchText.includes(query);
+            });
+
+            // Фильтрация избранного если активна вкладка wishlist
+            if (activeTab === 'wishlist') {
+                filtered = filtered.filter(product => favorites.includes(product.id));
+            }
+
+            // Сортировка
+            const sortValue = sortSelect ? sortSelect.value : 'none';
+            switch(sortValue) {
+                case 'priceAsc':
+                    filtered.sort((a, b) => a.price - b.price);
+                    break;
+                case 'priceDesc':
+                    filtered.sort((a, b) => b.price - a.price);
+                    break;
+                case 'ratingDesc':
+                    filtered.sort((a, b) => b.rating - a.rating);
+                    break;
+            }
+
+            renderCards(filtered);
+        }, 500);
+    }
+
+    // ===== ФУНКЦИЯ ОТРИСОВКИ КАРТОЧЕК =====
+    function renderCards(productsList) {
+        if (!productsFeed || !emptyState) return;
+        
+        productsFeed.innerHTML = '';
+        
+        if (productsList.length === 0) {
+            emptyState.style.display = 'block';
+            productsFeed.style.display = 'none';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        productsFeed.style.display = 'grid';
+        
+        productsList.forEach(function(product) {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <div class="product-brand">FOLLEN & SHAID</div>
+                <img src="${product.images[0]}" class="product-image" alt="${product.title}">
+                <div class="product-content">
+                    <h3 class="product-title">${product.title}</h3>
+                    <div class="product-price">${product.price.toLocaleString()} ₽</div>
+                    <div class="product-rating">
+                        ★ ${product.rating} (${product.reviews})
+                    </div>
+                </div>
+            `;
             
-            productsFeed.innerHTML = '';
+            card.addEventListener('click', function() {
+                openProductPage(product);
+            });
             
-            for(let i = 0; i < count; i++) {
-                const sk = document.createElement('div');
-                sk.className = 'skeleton-card';
-                sk.innerHTML = `
-                    <div class="sk-image"></div>
-                    <div class="sk-content">
-                        <div class="sk-line" style="width:80%"></div>
-                        <div class="sk-line" style="width:40%"></div>
-                    </div>
-                `;
-                productsFeed.appendChild(sk);
-            }
+            productsFeed.appendChild(card);
+        });
+    }
+
+    // ===== ФУНКЦИИ ДЛЯ СТРАНИЦЫ ТОВАРА =====
+    function openProductPage(product) {
+        const productPage = document.getElementById('productPage');
+        const carouselInner = document.getElementById('carouselInner');
+        const carouselIndicators = document.getElementById('carouselIndicators');
+        
+        if (!productPage || !carouselInner) return;
+        
+        // Заполняем галерею
+        carouselInner.innerHTML = '';
+        carouselIndicators.innerHTML = '';
+        
+        product.images.forEach((image, index) => {
+            const slide = document.createElement('div');
+            slide.className = 'carousel-slide';
+            slide.innerHTML = `<img src="${image}" alt="${product.title}">`;
+            carouselInner.appendChild(slide);
+            
+            const indicator = document.createElement('div');
+            indicator.className = 'carousel-indicator';
+            if (index === 0) indicator.classList.add('active');
+            carouselIndicators.appendChild(indicator);
+        });
+        
+        // Заполняем информацию
+        document.getElementById('productPageTitle').textContent = product.title;
+        document.getElementById('productPagePrice').textContent = `${product.price.toLocaleString()} ₽`;
+        document.getElementById('productPageDescription').textContent = product.description;
+        
+        // Рейтинг
+        const ratingStars = document.getElementById('productRatingStars');
+        const ratingCount = document.getElementById('productRatingCount');
+        if (ratingStars) ratingStars.innerHTML = '★'.repeat(Math.round(product.rating));
+        if (ratingCount) ratingCount.textContent = `${product.reviews} отзывов`;
+        
+        // Показываем страницу
+        productPage.classList.add('active');
+    }
+
+    // ===== ГЛОБАЛЬНЫЕ ФУНКЦИИ =====
+    window.filterProducts = function(category) {
+        console.log('🎯 Фильтр по категории:', category);
+        activeCategory = category;
+        
+        const searchInput = document.getElementById('searchInputProducts');
+        loadProducts(category, searchInput ? searchInput.value : '');
+        
+        const categoriesToggle = document.getElementById('categoriesToggle');
+        const categoriesDropdown = document.getElementById('categoriesDropdown');
+        
+        if (categoriesToggle) categoriesToggle.classList.remove('active');
+        if (categoriesDropdown) categoriesDropdown.classList.remove('active');
+    };
+
+    window.closeProductPage = function() {
+        const productPage = document.getElementById('productPage');
+        if (productPage) {
+            productPage.classList.remove('active');
         }
+    };
 
-        function triggerVibration() {
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
+    // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
+    function createSkeletons(count = 6) {
+        const productsFeed = document.getElementById('productsFeed');
+        if (!productsFeed) return;
+        
+        productsFeed.innerHTML = '';
+        productsFeed.style.display = 'grid';
+        
+        for(let i = 0; i < count; i++) {
+            const sk = document.createElement('div');
+            sk.className = 'skeleton-card';
+            sk.innerHTML = `
+                <div class="sk-image"></div>
+                <div class="sk-content">
+                    <div class="sk-line" style="width:80%"></div>
+                    <div class="sk-line" style="width:60%"></div>
+                    <div class="sk-line" style="width:40%"></div>
+                </div>
+            `;
+            productsFeed.appendChild(sk);
         }
+    }
 
-        // ===== ФУНКЦИИ ПЕРЕКЛЮЧЕНИЯ СТРАНИЦ =====
-        function showProductsPage() {
-            document.getElementById('main-page').style.display = 'none';
-            document.getElementById('products-page').style.display = 'block';
-            currentPage = 'products-page';
-            initProductsPage();
-        }
-
-        function hideProductsPage() {
-            document.getElementById('products-page').style.display = 'none';
-            document.getElementById('main-page').style.display = 'block';
-            currentPage = 'main-page';
-        }
-
-        // ===== ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ СТРАНИЦЫ ТОВАРОВ =====
-        function initProductsPage() {
-            // ===== ПЕРЕМЕННЫЕ СОСТОЯНИЯ =====
-            let cartItems = [];
-            let favorites = [];
-            let currentProduct = null;
-            let currentImageIndex = 0;
-            let activeCategory = 'all';
-            let activeTab = 'products';
-
-            // ===== DOM ЭЛЕМЕНТЫ =====
-            const productsFeed = document.querySelector('#products-page .products-feed');
-            const productPage = document.querySelector('#products-page .product-page');
-            const searchInput = document.querySelector('#products-page .search-input');
-            const categoriesToggle = document.querySelector('#products-page .categories-toggle');
-            const categoriesDropdown = document.querySelector('#products-page .categories-dropdown');
-            const loadingSpinner = document.querySelector('#products-page .loading-spinner');
-            const emptyState = document.querySelector('#products-page .empty-state');
-
-            // ===== ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА =====
-            if (categoriesToggle && categoriesDropdown) {
-                categoriesToggle.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    categoriesToggle.classList.toggle('active');
-                    categoriesDropdown.classList.toggle('active');
-                });
-
-                // Закрытие dropdown при клике вне его
-                document.addEventListener('click', (e) => {
-                    if (categoriesDropdown.classList.contains('active') &&
-                        !categoriesToggle.contains(e.target) && 
-                        !categoriesDropdown.contains(e.target)) {
-                        categoriesToggle.classList.remove('active');
-                        categoriesDropdown.classList.remove('active');
-                    }
-                });
-            }
-
-            // Обработчик поиска
-            if (searchInput) {
-                searchInput.addEventListener('input', debounce(() => {
-                    loadProducts(activeCategory, searchInput.value);
-                }, 300));
-            }
-
-            // ===== ОСНОВНЫЕ ФУНКЦИИ =====
-            function loadProducts(category = activeCategory, searchQuery = '') {
-                if (!productsFeed) return;
-                
-                createSkeletons();
-                
-                setTimeout(() => {
-                    let filtered = products.filter(p => {
-                        const matchesCategory = category === 'all' || p.category === category;
-                        if (searchQuery.trim() === '') return matchesCategory;
-                        
-                        const q = searchQuery.toLowerCase().trim();
-                        const searchIn = [
-                            p.title.toLowerCase(),
-                            p.description.toLowerCase(),
-                            ...(p.keywords || []).map(k => k.toLowerCase())
-                        ].join(' ');
-                        
-                        return matchesCategory && searchIn.includes(q);
-                    });
-
-                    renderCards(filtered);
-                }, 500);
-            }
-
-            function renderCards(list) {
-                if (!productsFeed || !emptyState) return;
-                
-                productsFeed.innerHTML = '';
-                
-                if (activeTab === 'wishlist') {
-                    list = list.filter(p => favorites.includes(p.id));
-                }
-
-                if (list.length === 0) {
-                    emptyState.style.display = 'block';
-                    return;
-                }
-                
-                emptyState.style.display = 'none';
-                
-                list.forEach(product => {
-                    const card = document.createElement('div');
-                    card.className = 'product-card';
-                    card.innerHTML = `
-                        <div class="swipe-bg">
-                            <div class="swipe-left">+ в корзину</div>
-                            <div class="swipe-right">★ в избранное</div>
-                        </div>
-                        <div class="product-brand">FOLLEN & SHAID</div>
-                        <img src="${product.images[0]}" class="product-image" alt="${product.title}">
-                        <div class="product-content">
-                            <h3 class="product-title">${product.title}</h3>
-                            <div class="product-price">${product.price.toLocaleString()} ₽</div>
-                        </div>
-                    `;
-                    
-                    card.addEventListener('click', () => openProductPage(product));
-                    productsFeed.appendChild(card);
-                });
-            }
-
-            function openProductPage(product) {
-                if (!productPage) return;
-                
-                currentProduct = product;
-                currentImageIndex = 0;
-                
-                productPage.innerHTML = `
-                    <div class="product-header">
-                        <button class="back-button" onclick="closeProductPage()">←</button>
-                        <h2>${product.title}</h2>
-                        <button class="wishlist-button">♡</button>
-                    </div>
-                    <div class="product-gallery">
-                        <img src="${product.images[0]}" alt="${product.title}" class="product-main-image">
-                        <div class="product-thumbnails">
-                            ${product.images.map((img, index) => 
-                                `<img src="${img}" alt="" class="thumbnail ${index === 0 ? 'active' : ''}" 
-                                    onclick="changeProductImage(${index})">`
-                            ).join('')}
-                        </div>
-                    </div>
-                    <div class="product-details">
-                        <div class="product-price">${product.price.toLocaleString()} ₽</div>
-                        <div class="product-rating">
-                            ★ ${product.rating} (${product.reviews} отзывов)
-                        </div>
-                        <p class="product-description">${product.description}</p>
-                        <button class="add-to-cart-btn">Добавить в корзину</button>
-                    </div>
-                `;
-                
-                productPage.classList.add('active');
-            }
-
-            function closeProductPage() {
-                if (productPage) {
-                    productPage.classList.remove('active');
-                }
-            }
-
-            function changeProductImage(index) {
-                const mainImage = productPage.querySelector('.product-main-image');
-                const thumbnails = productPage.querySelectorAll('.thumbnail');
-                
-                if (mainImage && thumbnails.length > 0) {
-                    currentImageIndex = index;
-                    mainImage.src = currentProduct.images[index];
-                    
-                    thumbnails.forEach((thumb, i) => {
-                        thumb.classList.toggle('active', i === index);
-                    });
-                }
-            }
-
-            // ===== ГЛОБАЛЬНЫЕ ФУНКЦИИ =====
-            window.filterProducts = function(category) {
-                activeCategory = category;
-                loadProducts(category, searchInput ? searchInput.value : '');
-                if (categoriesToggle) categoriesToggle.classList.remove('active');
-                if (categoriesDropdown) categoriesDropdown.classList.remove('active');
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction() {
+            const context = this;
+            const args = arguments;
+            const later = function() {
+                clearTimeout(timeout);
+                func.apply(context, args);
             };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
 
-            window.openProductPage = openProductPage;
-            window.closeProductPage = closeProductPage;
-            window.changeProductImage = changeProductImage;
+    // ===== ЗАГРУЗКА ТОВАРОВ ПРИ ИНИЦИАЛИЗАЦИИ =====
+    loadProducts();
+}
 
-            // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
-            function debounce(func, wait) {
-                let timeout;
-                return function executedFunction(...args) {
-                    const later = () => {
-                        clearTimeout(timeout);
-                        func(...args);
-                    };
-                    clearTimeout(timeout);
-                    timeout = setTimeout(later, wait);
-                };
-            }
+// ===== ФУНКЦИИ ПЕРЕКЛЮЧЕНИЯ СТРАНИЦ =====
+function showProductsPage() {
+    document.getElementById('main-page').style.display = 'none';
+    document.getElementById('products-page').style.display = 'block';
+    currentPage = 'products-page';
+    
+    if (!productsPageInitialized) {
+        initProductsPage();
+    } else {
+        // Перезагружаем товары если страница уже инициализирована
+        const searchInput = document.getElementById('searchInputProducts');
+        const loadProducts = window.loadProducts || function() {};
+        loadProducts(activeCategory, searchInput ? searchInput.value : '');
+    }
+}
 
-            // ===== ЗАГРУЗКА ТОВАРОВ ПРИ ИНИЦИАЛИЗАЦИИ =====
-            loadProducts();
+function hideProductsPage() {
+    document.getElementById('products-page').style.display = 'none';
+    document.getElementById('main-page').style.display = 'block';
+    currentPage = 'main-page';
+}
+
+// ===== ОБРАБОТЧИКИ СВАЙПОВ =====
+// Используем существующую переменную touchStartY или создаем если нет
+document.addEventListener('touchstart', function(e) {
+    if (currentPage === 'main-page' && window.scrollY <= 0) {
+        if (typeof touchStartY === 'undefined') touchStartY = 0;
+        touchStartY = e.touches[0].clientY;
+    }
+});
+
+document.addEventListener('touchend', function(e) {
+    if (currentPage === 'main-page' && touchStartY && window.scrollY <= 0) {
+        const touchEndY = e.changedTouches[0].clientY;
+        const diffY = touchEndY - touchStartY;
+        
+        if (diffY < -50) { // Свайп вверх
+            showProductsPage();
         }
+        
+        touchStartY = 0;
+    }
+});
 
-        // ===== ОБРАБОТЧИКИ СВАЙПОВ =====
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let isHorizontalSwipe = false;
-        let isVerticalSwipe = false;
+// ===== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📱 Страница загружена');
+    
+    // Инициализируем глобальные переменные если их нет
+    if (typeof currentPage === 'undefined') currentPage = 'main-page';
+    if (typeof activeCategory === 'undefined') activeCategory = 'all';
+    if (typeof activeTab === 'undefined') activeTab = 'products';
+    if (typeof favorites === 'undefined') favorites = [];
+    if (typeof cartItems === 'undefined') cartItems = [];
+    if (typeof productsPageInitialized === 'undefined') productsPageInitialized = false;
+    if (typeof touchStartY === 'undefined') touchStartY = 0;
+    
+    // Добавляем обработчик для кнопки корзины
+    const cartButton = document.getElementById('bottomCartButton');
+    if (cartButton) {
+        cartButton.addEventListener('click', function() {
+            console.log('🛒 Открытие корзины');
+            // Здесь будет логика открытия корзины
+        });
+    }
+    
+    // Добавляем обработчик для кнопки "Добавить в корзину"
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    if (addToCartBtn) {
+        addToCartBtn.addEventListener('click', function() {
+            console.log('➕ Добавление в корзину');
+            // Здесь будет логика добавления в корзину
+        });
+    }
+});
 
-        function handleTouchStart(e) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            isHorizontalSwipe = false;
-            isVerticalSwipe = false;
+// ===== ДОБАВЛЯЕМ СТИЛИ ДЛЯ СКЕЛЕТОНОВ =====
+// Проверяем, не добавлены ли стили уже
+if (!document.getElementById('skeleton-styles')) {
+    const style = document.createElement('style');
+    style.id = 'skeleton-styles';
+    style.textContent = `
+        .skeleton-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-
-        function handleTouchMove(e) {
-            if (!touchStartX) return;
-            
-            const touchCurrentX = e.touches[0].clientX;
-            const touchCurrentY = e.touches[0].clientY;
-            const diffX = touchCurrentX - touchStartX;
-            const diffY = touchCurrentY - touchStartY;
-            
-            // Определяем направление свайпа
-            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 10) {
-                isHorizontalSwipe = true;
-            } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 10) {
-                isVerticalSwipe = true;
-            }
+        
+        .sk-image {
+            width: 100%;
+            height: 180px;
+            background: #e9ecef;
         }
-
-        function handleTouchEnd(e) {
-            if (!touchStartX) return;
-            
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-            const diffX = touchEndX - touchStartX;
-            const diffY = touchEndY - touchStartY;
-
-            // Свайп вверх на главной - открыть товары
-            if (currentPage === 'main-page' && isVerticalSwipe && diffY < -50 && window.scrollY <= 0) {
-                showProductsPage();
-            }
-            
-            // Свайп вниз на странице товаров - вернуться
-            if (currentPage === 'products-page' && isVerticalSwipe && diffY > 50 && window.scrollY <= 0) {
-                hideProductsPage();
-            }
-
-            touchStartX = 0;
-            touchStartY = 0;
-            isHorizontalSwipe = false;
-            isVerticalSwipe = false;
+        
+        .sk-content {
+            padding: 12px;
         }
-
-        // Добавляем обработчики свайпов
-        document.addEventListener('touchstart', handleTouchStart);
-        document.addEventListener('touchmove', handleTouchMove);
-        document.addEventListener('touchend', handleTouchEnd);
-
-        // ===== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ =====
-        document.addEventListener('DOMContentLoaded', function() {
-            // Добавь кнопку на главную страницу для тестирования
-            const mainPage = document.getElementById('main-page');
-            if (mainPage) {
-                mainPage.innerHTML = `
-                    <div style="padding: 50px; text-align: center;">
-                        <h1>Главная страница</h1>
-                        <p>Свайпните вверх или нажмите кнопку ниже чтобы открыть товары</p>
-                        <button onclick="showProductsPage()" style="padding: 15px 30px; font-size: 18px;">
-                            Открыть товары
-                        </button>
-                    </div>
-                `;
-            }
-          });
-        }          
+        
+        .sk-line {
+            height: 12px;
+            background: #e9ecef;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        
+        .product-rating {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 // Блокировка масштабирования только при мультитаче
 let isScrolling = false;
